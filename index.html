@@ -1840,7 +1840,72 @@ function tEnt(l){const site=l.q.site||"";const g=`https://www.google.com/search?
 <section class="card pad"><div class="chd"><h3>Entreprise</h3><div class="row">${l.naf?`<span class="tag">NAF ${esc(l.naf)}</span>`:""}${l.siret?`<span class="tag">SIRET ${esc(l.siret)}</span>`:""}</div></div>
  <p class="sm" style="margin:6px 0 10px">${esc(typo(l))}</p>
  <div class="row" style="align-items:flex-end"><div class="f" style="flex:1 1 200px;margin:0"><label for="q-site">Site web</label><input id="q-site" data-q="site" type="url" placeholder="https://" value="${esc(site)}"></div>${site?`<a class="btn p" href="${esc(/^https?:/.test(site)?site:"https://"+site)}" target="_blank" rel="noopener">Visiter ↗</a>`:""}<a class="btn" href="${g}" target="_blank" rel="noopener">Google ↗</a>${pap?`<a class="btn" href="${pap}" target="_blank" rel="noopener">Pappers ↗</a>`:""}</div></section>`;
- return `<div class="dgrid"><div class="dl">${left}</div><aside class="dr">${right}</aside></div>${tOrgs(l)}`}
+ return `<div class="dgrid"><div class="dl">${left}</div><aside class="dr">${right}</aside></div>${tEnr(l)}${tOrgs(l)}`}
+/* ===== Enrichissement des fiches : registre officiel (gratuit), propriétaires, locataires ===== */
+const ENR=(()=>{
+const API="https://recherche-entreprises.api.gouv.fr/search";
+const FJ={5710:"SAS",5720:"SASU",5499:"SARL",5498:"EURL",5599:"SA",5505:"SA",5308:"SA",6540:"SCI",6541:"SCI de construction-vente",6551:"SCI",6598:"SCI",6599:"Société civile",5202:"SNC",5306:"SELARL",9220:"Association",6220:"GIE",1000:"Entrepreneur individuel",7210:"Commune",6521:"SCPI",6532:"SCI",6533:"GAEC"};
+const EF={"00":"0 salarié","01":"1 à 2","02":"3 à 5","03":"6 à 9","11":"10 à 19","12":"20 à 49","21":"50 à 99","22":"100 à 199","31":"200 à 249","32":"250 à 499","41":"500 à 999","42":"1 000 à 1 999","51":"2 000 à 4 999","52":"5 000 à 9 999","53":"10 000 et plus"};
+const nz=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+const tok=s=>nz(s).split(" ").filter(Boolean);
+const same=(a,b)=>tok(a).sort().join()===tok(b).sort().join();
+const cap=s=>String(s||"").toLowerCase().replace(/(^|[\s'-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase());
+let last=0;
+async function get(p){const w=Math.max(0,last+170-Date.now());last=Date.now()+w;if(w)await new Promise(r=>setTimeout(r,w));
+ const u=API+"?"+new URLSearchParams({per_page:5,...p});
+ for(let i=0;i<3;i++){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),9000);const r=await fetch(u,{signal:c.signal});clearTimeout(t);
+  if(r.status===429){await new Promise(x=>setTimeout(x,900*(i+1)));continue}if(!r.ok)return null;return await r.json()}catch(e){if(i===2)return null}}return null}
+const card=r=>{const f=r.finances||{},y=Object.keys(f).sort().pop(),d=r.dirigeants||[];
+ return{siren:r.siren,nom:r.nom_complet,forme:FJ[r.nature_juridique]||("Forme "+r.nature_juridique),cree:r.date_creation,eff:EF[r.tranche_effectif_salarie]||null,effA:r.annee_tranche_effectif_salarie,cat:r.categorie_entreprise,
+ ca:y?f[y].ca:null,rn:y?f[y].resultat_net:null,an:y||null,nEt:r.nombre_etablissements,nOu:r.nombre_etablissements_ouverts,adr:(r.siege||{}).adresse,naf:r.activite_principale,actif:r.etat_administratif==="A",
+ bio:!!(r.complements&&r.complements.est_bio),sci:String(r.nature_juridique).startsWith("65")||String(r.activite_principale).startsWith("68"),
+ dir:d.filter(x=>x.type_dirigeant==="personne physique").map(x=>({n:cap([String(x.prenoms||"").split(",")[0].trim(),x.nom].filter(Boolean).join(" ")),f:x.qualite||""})),
+ mor:d.filter(x=>x.type_dirigeant==="personne morale"&&!/commissaire/i.test(x.qualite||"")).map(x=>({n:x.denomination,siren:x.siren,f:x.qualite||""}))}};
+async function bySiret(l){if(!l.siret)return null;const j=await get({q:String(l.siret),per_page:1});return j===null?undefined:(j.results&&j.results[0]?card(j.results[0]):null)}
+async function byName(name,cp){const dep=String(cp||"").slice(0,2),t=tok(name);if(!t.length)return null;
+ for(const p of [{q:name,departement:dep},{q:name}]){if(!dep&&p.departement)continue;const j=await get(p);if(j===null)return undefined;
+  const ok=(j.results||[]).filter(r=>{const n=tok(r.nom_complet);return t.every(x=>n.includes(x))});
+  if(ok.length){const ex=ok.find(r=>same(r.nom_complet,name)||same(r.nom_raison_sociale,name));const r=ex||ok[0];
+   const loc=String((r.siege||{}).departement)===dep;return{c:card(r),fiab:(ex&&loc)||(ok.length===1&&loc)?"ok":"a-confirmer"}}}
+ return null}
+async function voisins(l,skip){const num=nz(l.adresse);if(!num||!l.cp)return null;const j=await get({q:l.adresse,code_postal:l.cp,per_page:25,minimal:"true",include:"siege"});if(j===null)return undefined;
+ const out=(j.results||[]).filter(r=>nz((r.siege||{}).adresse).includes(num)&&!skip.has(r.siren)).map(r=>({nom:r.nom_complet,siren:r.siren,naf:r.activite_principale,eff:EF[r.tranche_effectif_salarie]||null,sci:String(r.nature_juridique).startsWith("65")||String(r.activite_principale).startsWith("68"),actif:r.etat_administratif==="A"}));
+ return{liste:out.filter(x=>x.actif).slice(0,12),total:j.total_results}}
+const pid=()=>"p"+Math.random().toString(36).slice(2,9);
+function addPeople(l,org,dirs){l.people=l.people||[];dirs.forEach(d=>{if(!d.n)return;if(l.people.some(p=>p.o===org&&same(p.n,d.n)))return;l.people.push({id:pid(),n:d.n,f:d.f||"",o:org,t:"",e:"",src:"RNE"})})}
+const busy=new Set();
+async function run(l){if(busy.has(l.id))return false;busy.add(l.id);try{
+ const e={t:now(),v:1,ent:null,own:[],aut:[],voi:null};let net=false;
+ const ent=await bySiret(l);if(ent!==undefined)net=true;
+ if(ent===null||ent===undefined){const n=await byName(l.entreprise,l.cp);if(n===undefined&&ent===undefined)return false;net=true;if(n&&n.c)e.ent=n.c}else e.ent=ent;
+ const skip=new Set(e.ent?[e.ent.siren]:[]);
+ const own=(l.proprietaire||"").split(",").map(s=>s.trim()).filter(Boolean);
+ for(const nm of own){const r=await byName(nm,l.cp);if(r&&r.c){e.own.push({nom:nm,c:r.c,fiab:r.fiab});skip.add(r.c.siren)}else e.own.push({nom:nm,c:null})}
+ for(const nm of (l.autres||[])){const r=await byName(nm,l.cp);if(r&&r.c){e.aut.push({nom:nm,c:r.c,fiab:r.fiab});skip.add(r.c.siren)}else e.aut.push({nom:nm,c:null})}
+ e.voi=await voisins(l,skip)||null;
+ if(e.ent){addPeople(l,l.entreprise||e.ent.nom,e.ent.dir);if(!l.dirigeant&&e.ent.dir[0])l.dirigeant=e.ent.dir[0].n;if(!l.naf&&e.ent.naf)l.naf=e.ent.naf}
+ e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
+ l.enr=e;return true}finally{busy.delete(l.id)}}
+let auto_run=false;
+async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr);if(!todo.length)return;let n=0,fail=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+ for(const l of todo){const ok=await run(l);if(ok){n++;if(n%4===0)save()}else{fail++;if(fail>=2&&!n)break}}
+ save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false}}
+return{run,auto,busy,nz}})();
+const fmE=n=>n==null?"—":Math.abs(n)>=1e6?(n/1e6).toFixed(1).replace(".",",")+" M€":Math.round(n/1e3)+" k€";
+function tEnr(l){const e=l.enr,b=ENR.busy.has(l.id),A=s=>`https://annuaire-entreprises.data.gouv.fr/entreprise/${s}`,P=s=>`https://www.pappers.fr/entreprise/${s}`;
+ const btn=`<button class="btn s ${e?"":"p"}" data-enr ${b?"disabled":""}>${b?"Recherche en cours…":e?"Actualiser":"Enrichir la fiche"}</button>`;
+ if(!e)return `<section class="card pad enr"><div class="chd"><h3>Fiche enrichie</h3>${btn}</div><p class="xs mut" style="margin:0">${b?"Interrogation du registre officiel…":"Pas encore enrichie : registre officiel (dirigeants, effectif, chiffre d'affaires), propriétaires, autres sociétés à la même adresse."}</p></section>`;
+ const E=e.ent,kv=(k,v)=>v?`<div class="f" style="margin:0"><label style="display:block">${k}</label><div class="sm" style="font-weight:600">${v}</div></div>`:"";
+ const co=(o,role)=>{const c=o.c;return `<div class="pp"><div><b>${esc(o.nom)}</b> <span class="tag ${role==="o"?"a":"b"}">${role==="o"?"Propriétaire":"Occupant"}</span>${c?` <span class="tag ${o.fiab==="ok"?"g":""}">${o.fiab==="ok"?"Vérifié":"À confirmer"}</span>`:' <span class="tag">Non trouvé au registre</span>'}
+  ${c?`<div class="xs">${esc(c.forme)} · SIREN <a href="${A(c.siren)}" target="_blank" rel="noopener">${esc(c.siren)}</a>${c.eff?` · ${esc(c.eff)} sal.`:""}${c.ca!=null?` · CA ${fmE(c.ca)} (${c.an})`:""}${c.dir.length?`<br>Dirigeant${c.dir.length>1?"s":""} : ${c.dir.map(d=>esc(d.n)+(d.f?" ("+esc(d.f)+")":"")).join(", ")}`:""}${c.mor.length?`<br>Société dirigeante : ${c.mor.map(d=>esc(d.n)).join(", ")}`:""}</div>`:""}</div></div>`};
+ const v=e.voi;
+ return `<section class="card pad enr"><div class="chd"><h3>Fiche enrichie</h3><div class="row"><span class="xs mut">Registre officiel · ${new Date(e.t).toLocaleDateString("fr-FR")}</span>${btn}</div></div>
+ ${E?`<div class="g3b" style="margin-bottom:8px">${kv("Forme",esc(E.forme)+(E.bio?" · Bio":""))}${kv("Créée en",E.cree?E.cree.slice(0,4):"")}${kv("Effectif",E.eff?esc(E.eff)+" sal.":"")}${kv("Chiffre d'affaires "+(E.an||""),E.ca!=null?fmE(E.ca):"")}${kv("Résultat net",E.rn!=null?fmE(E.rn):"")}${kv("Établissements",E.nEt?E.nOu+" ouvert"+(E.nOu>1?"s":"")+" / "+E.nEt:"")}</div>
+ <div class="xs" style="margin-bottom:6px">Dirigeant${E.dir.length>1?"s":""} : ${E.dir.map(d=>`<b>${esc(d.n)}</b>${d.f?" ("+esc(d.f)+")":""}`).join(", ")||"—"} · <a href="${A(E.siren)}" target="_blank" rel="noopener">Annuaire des entreprises ↗</a> · <a href="${P(E.siren)}" target="_blank" rel="noopener">Pappers ↗</a></div>`:`<p class="xs mut">Occupant non retrouvé au registre officiel.</p>`}
+ ${e.own.map(o=>co(o,"o")).join("")}${e.aut.map(o=>co(o,"a")).join("")}
+ ${v&&(v.liste.length||v.total>1)?`<details style="margin-top:8px"><summary class="sm" style="cursor:pointer"><b>${v.total} société${v.total>1?"s":""} domiciliée${v.total>1?"s":""} à cette adresse</b>${v.total>15?" · site multi-occupants (marché, zone, centre d'affaires)":" · locataires probables"}</summary>
+  <div class="xs" style="margin-top:6px">${v.liste.map(x=>`<div>${x.sci?'<span class="tag a">SCI / foncière</span> ':""}<a href="${A(x.siren)}" target="_blank" rel="noopener">${esc(x.nom)}</a> · NAF ${esc(x.naf||"")}${x.eff?" · "+esc(x.eff)+" sal.":""}</div>`).join("")}${v.total>v.liste.length?`<div class="mut">${v.liste.length?"… et ":""}${v.total-v.liste.length} autre${v.total-v.liste.length>1?"s":""} société${v.total-v.liste.length>1?"s":""} au registre à cette adresse</div>`:""}</div></details>`:""}
+ <p class="xs mut" style="margin:8px 0 0">${l.q.tel||l.q.email||l.q.site?`Contacts : ${[l.q.tel,l.q.email,l.q.site].filter(Boolean).map(esc).join(" · ")}`:"Téléphone, e-mail et site web : le registre officiel n'en contient pas. Ils s'ajoutent par recherche web (étape suivante) ou à la main."}</p></section>`}
 function mails(l){const u=me(),c=l.q.contact?l.q.contact.trim():"",civ=c?`Bonjour ${c},`:"Bonjour,",ind=secteur(l)==="Industrie",fr=froidP(l);
  const sig=`${u.nom}\nChargé d'affaires CEE, PACLIM\n${u.tel||"04 84 89 43 00"} · ${u.email||"bureau.etude@paclim.fr"}\npaclim.fr`;
  const obj=`${l.entreprise||"Votre site"} à Corbas : chauffage${fr?" et froid":""} financés par les CEE`;
@@ -1973,6 +2038,7 @@ function bindDrawer(l){const D=$("#drawer");
  $$("#drawer [data-mkp]").forEach(b=>b.onclick=()=>mkPrincipal(l2,b.dataset.mkp));
  $$("#drawer [data-pd]").forEach(b=>b.onclick=()=>{const p=l2.people.find(x=>x.id===b.dataset.pd);ask("Supprimer ce contact ?",`<p>${esc(p.n)} sera retiré de la fiche.</p>`,()=>{l2.people=l2.people.filter(x=>x.id!==p.id);save();keepY();toast("Contact supprimé")})});
  $$("#drawer [data-oa]").forEach(b=>b.onclick=()=>askOrg(l2));
+ $$("#drawer [data-enr]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Recherche en cours…";const ok=await ENR.run(l2);if(ok){save();toast("Fiche enrichie")}else toast("Registre injoignable, réessaie dans un instant");render()});
  $$("#drawer [data-od]").forEach(b=>b.onclick=()=>{const [k,i]=b.dataset.od.split("|"),own=(l2.proprietaire||"").split(",").map(s=>s.trim()).filter(Boolean),n=k==="a"?l2.autres[+i]:own[+i];ask("Retirer cette entreprise ?",`<p>${esc(n)} sera retirée de la liste. Ses contacts restent dans la fiche, à rattacher.</p>`,()=>{if(k==="a")l2.autres.splice(+i,1);else{own.splice(+i,1);l2.proprietaire=own.join(", ")}save();keepY();toast("Entreprise retirée")})})}
  $$("#drawer [data-nav]").forEach(b=>b.onclick=()=>navLead(+b.dataset.nav));
  $$("#drawer [data-qa]").forEach(b=>b.onclick=()=>{const k=b.dataset.qa;if(k==="call"){if(l.q.tel){location.href="tel:"+l.q.tel.replace(/\s/g,"")}else{tab="ent";renderDrawer();toast("Renseignez le téléphone dans « Interlocuteur »")}}else if(k==="mail"){tab="mail";renderDrawer()}else askRappel(l)});
@@ -2275,6 +2341,7 @@ async function boot(){
   const {data}=await CL.sb.auth.getSession();
   if(data.session){try{await clStart(data.session)}catch(e){showAuth(clMsg(e))}}else showAuth()}
  catch(e){render()}}
+setTimeout(()=>ENR.auto(),6000);
 if(window.supabase)boot();else{window.__sbFail=()=>{if(window.__sbReady){window.__sbReady=null;render()}};window.__sbReady=()=>{window.__sbReady=null;boot()};setTimeout(()=>{if(window.__sbReady){window.__sbReady=null;render()}},4000)}
 }
 </script>
