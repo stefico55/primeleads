@@ -1873,8 +1873,17 @@ async function voisins(l,skip){const num=nz(l.adresse);if(!num||!l.cp)return nul
  return{liste:out.filter(x=>x.actif).slice(0,12),total:j.total_results}}
 const pid=()=>"p"+Math.random().toString(36).slice(2,9);
 function addPeople(l,org,dirs){l.people=l.people||[];dirs.forEach(d=>{if(!d.n)return;if(l.people.some(p=>p.o===org&&same(p.n,d.n)))return;l.people.push({id:pid(),n:d.n,f:d.f||"",o:org,t:"",e:"",src:"RNE"})})}
+const cache=new Map();
+async function contacts(l,e){const nom=(e.ent&&e.ent.nom)||l.entreprise;if(!nom)return false;const key=(e.ent&&e.ent.siren)||nz(nom)+"|"+l.cp;
+ let r=cache.get(key);if(!r){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
+  const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,lat:l.lat,lng:l.lng,site:l.q.site||""}),signal:c.signal});clearTimeout(t);
+  if(!x.ok)return false;r=await x.json();if(!r||r.err)return false}catch(err){return false}cache.set(key,r)}
+ e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],t:now()};
+ l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return true}
+const nz2=0;
 const busy=new Set();
 async function run(l){if(busy.has(l.id))return false;busy.add(l.id);try{
+ if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2;return true}
  const e={t:now(),v:1,ent:null,own:[],aut:[],voi:null};let net=false;
  const ent=await bySiret(l);if(ent!==undefined)net=true;
  if(ent===null||ent===undefined){const n=await byName(l.entreprise,l.cp);if(n===undefined&&ent===undefined)return false;net=true;if(n&&n.c)e.ent=n.c}else e.ent=ent;
@@ -1885,10 +1894,11 @@ async function run(l){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.voi=await voisins(l,skip)||null;
  if(e.ent){addPeople(l,l.entreprise||e.ent.nom,e.ent.dir);if(!l.dirigeant&&e.ent.dir[0])l.dirigeant=e.ent.dir[0].n;if(!l.naf&&e.ent.naf)l.naf=e.ent.naf}
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
- l.enr=e;return true}finally{busy.delete(l.id)}}
+ l.enr=e;const okc=await contacts(l,e);if(okc)e.v=2;return true}finally{busy.delete(l.id)}}
 let auto_run=false;
-async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr);if(!todo.length)return;let n=0,fail=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
- for(const l of todo){const ok=await run(l);if(ok){n++;if(n%4===0)save()}else{fail++;if(fail>=2&&!n)break}}
+async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr||l.enr.v<2).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+ const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
+ await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false}}
 return{run,auto,busy,nz}})();
 const fmE=n=>n==null?"—":Math.abs(n)>=1e6?(n/1e6).toFixed(1).replace(".",",")+" M€":Math.round(n/1e3)+" k€";
@@ -1905,7 +1915,16 @@ function tEnr(l){const e=l.enr,b=ENR.busy.has(l.id),A=s=>`https://annuaire-entre
  ${e.own.map(o=>co(o,"o")).join("")}${e.aut.map(o=>co(o,"a")).join("")}
  ${v&&(v.liste.length||v.total>1)?`<details style="margin-top:8px"><summary class="sm" style="cursor:pointer"><b>${v.total} société${v.total>1?"s":""} domiciliée${v.total>1?"s":""} à cette adresse</b>${v.total>15?" · site multi-occupants (marché, zone, centre d'affaires)":" · locataires probables"}</summary>
   <div class="xs" style="margin-top:6px">${v.liste.map(x=>`<div>${x.sci?'<span class="tag a">SCI / foncière</span> ':""}<a href="${A(x.siren)}" target="_blank" rel="noopener">${esc(x.nom)}</a> · NAF ${esc(x.naf||"")}${x.eff?" · "+esc(x.eff)+" sal.":""}</div>`).join("")}${v.total>v.liste.length?`<div class="mut">${v.liste.length?"… et ":""}${v.total-v.liste.length} autre${v.total-v.liste.length>1?"s":""} société${v.total-v.liste.length>1?"s":""} au registre à cette adresse</div>`:""}</div></details>`:""}
- <p class="xs mut" style="margin:8px 0 0">${l.q.tel||l.q.email||l.q.site?`Contacts : ${[l.q.tel,l.q.email,l.q.site].filter(Boolean).map(esc).join(" · ")}`:"Téléphone, e-mail et site web : le registre officiel n'en contient pas. Ils s'ajoutent par recherche web (étape suivante) ou à la main."}</p></section>`}
+ ${tCt(l,e)}</section>`}
+function tCt(l,e){const c=e.ct,hr=u=>/^https?:/.test(u)?u:"https://"+u,lk=(h,t)=>`<a href="${esc(h)}" target="_blank" rel="noopener">${esc(t)}</a>`;
+ if(!c)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : recherche en attente (site de l'entreprise, mentions légales, OpenStreetMap).</p>`;
+ const any=c.tel||c.email||c.site;if(!any)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : aucun site ni téléphone public trouvé pour cette société. Les champs restent à saisir à la main (Interlocuteur).</p>`;
+ const sc=c.social||{};
+ return `<h4 class="sh" style="margin-top:10px">Coordonnées trouvées <span class="tag ${c.fiab==="verifie"?"g":""}">${c.fiab==="verifie"?"Vérifié (SIREN sur le site)":"À confirmer"}</span></h4>
+ <div class="xs" style="line-height:1.7">${c.tels&&c.tels.length?"Tél. "+c.tels.map(t=>`<a href="tel:${esc(t.replace(/\s/g,""))}">${esc(t)}</a>`).join(" · "):c.tel?`Tél. <a href="tel:${esc(c.tel.replace(/\s/g,""))}">${esc(c.tel)}</a>`:""}
+ ${c.emails&&c.emails.length?"<br>E-mail "+c.emails.map(m=>lk("mailto:"+m,m)).join(" · "):c.email?"<br>E-mail "+lk("mailto:"+c.email,c.email):""}
+ ${c.site?"<br>Site "+lk(hr(c.site),c.site.replace(/^https?:\/\//,"")):""}${sc.linkedin?" · "+lk(sc.linkedin,"LinkedIn"):""}${sc.facebook?" · "+lk(sc.facebook,"Facebook"):""}
+ <br><span class="mut">Sources : ${esc((c.src||[]).join(", ")||"web")}. Les champs vides de l'interlocuteur ont été préremplis.</span></div>`}
 function mails(l){const u=me(),c=l.q.contact?l.q.contact.trim():"",civ=c?`Bonjour ${c},`:"Bonjour,",ind=secteur(l)==="Industrie",fr=froidP(l);
  const sig=`${u.nom}\nChargé d'affaires CEE, PACLIM\n${u.tel||"04 84 89 43 00"} · ${u.email||"bureau.etude@paclim.fr"}\npaclim.fr`;
  const obj=`${l.entreprise||"Votre site"} à Corbas : chauffage${fr?" et froid":""} financés par les CEE`;
