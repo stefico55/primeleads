@@ -1453,6 +1453,17 @@ select,input[type=text],input[type=search],input[type=email],input[type=tel],inp
 .sc-t b{color:#2f6d12;font-size:12pt}.sc-t small{display:block;margin-left:7.5mm}
 .sc-l{border-top:.3mm solid #dbe3ec}
 ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
+
+/* NOTE v4 : page 2 aérée */
+.nt-h2 .nt-tt h1{font-size:16pt}
+.pg2{padding-top:10mm!important}
+.nt-st{font-size:17pt;margin:0 0 4mm;color:#04203A;letter-spacing:-.01em;padding-bottom:4mm;border-bottom:.3mm solid #dbe3ec}
+.pg2 h2{margin:10mm 0 4mm!important}
+.pg2 p.sm{line-height:1.6}.pg2 ul.tw li{margin:1.5mm 0}
+.pg2 .rg{gap:5mm}
+.pg2 .nt-cta{margin-top:20mm;padding:7mm 8mm}
+.pg2 .nt-fn{margin-top:8mm}
+.pg2 .nt-cta{margin-top:12mm}.pg2 ul.tw{padding-top:0;margin-top:3mm}.pg2 ul.tw li{margin:0 0 2mm;break-inside:avoid}.pg2 h2{margin:8mm 0 3mm!important}
 </style>
 </head>
 <body>
@@ -1777,12 +1788,12 @@ function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),ok=r.fiches.filter(
  <div class="pg-body"><p class="nt-for">Étude établie par PACLIM pour <b>${esc(l.entreprise||"votre société")}</b>${q.contact?`, à l'attention de ${esc(q.contact)}`:""}.</p>${band}
  <h2>Votre site</h2><div class="cl">${nic("bat")}<div><small>Entreprise</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i></div><div class="cl-a">${nic("pin")}<div><small>Adresse</small><b>${esc(l.adresse)}, ${l.cp} ${esc(l.ville)}</b></div></div></div><div class="tls">${tile("surf","Surface",nf(surf)+" m²"+`<i>${q.surfChauffee?"chauffés":"au sol"}</i>`)}${tile("haut","Hauteur",haut)}${tile("fire","Chauffage",chf)}${tile("snow","Groupe froid",frd)}</div>
  <h2>Solutions pressenties</h2><div class="scs">${ok.map(card).join("")||'<p class="mut">À définir lors de la visite technique.</p>'}</div></div>${foot(1)}</article>
- <article class="page nt"><div class="nt-h nt-h2"><div class="nt-logo">${LOGO_FULL}</div><div class="nt-tt"><h1>Comment cette fourchette est établie</h1><em>${esc(l.entreprise||"")} · réf. ${ref}</em></div></div>
- <div class="pg-body"><h2>1. Le calcul de la prime</h2><p class="sm">Chaque fiche d'opération fixe un volume d'économies d'énergie, en kWh cumac, selon la puissance de vos équipements et la zone climatique${r.zone?` (${r.zone} pour votre site)`:""}. Ce volume est valorisé entre ${nf(sx.prixBas,1)} et ${nf(sx.prixHaut,1)} € par MWh cumac.</p>
+ <article class="page nt"><div class="nt-h nt-h2"><div class="nt-logo">${LOGO_FULL}</div><div class="nt-tt"><h1>Note d'éligibilité CEE</h1><span>Certificats d'économies d'énergie</span><em>${esc(l.entreprise||"")} · réf. ${ref}</em></div></div>
+ <div class="pg-body pg2"><h1 class="nt-st">Comment cette fourchette est établie</h1><h2>1. Le calcul de la prime</h2><p class="sm">Chaque fiche d'opération fixe un volume d'économies d'énergie, en kWh cumac, selon la puissance de vos équipements et la zone climatique${r.zone?` (${r.zone} pour votre site)`:""}. Ce volume est valorisé entre ${nf(sx.prixBas,1)} et ${nf(sx.prixHaut,1)} € par MWh cumac.</p>
  ${calcRows?`<table class="ct"><thead><tr><th>Opération</th><th class="n">kWh cumac</th><th class="n">Prime estimée</th></tr></thead><tbody>${calcRows}</tbody><tfoot><tr><td>Total estimé</td><td class="n">${nf(r.kwhc)}</td><td class="n">${eur(r.lo)} à ${eur(r.hi)}</td></tr></tfoot></table>`:(es?`<p class="sm">En l’absence de relevés, nous retenons une puissance de chauffage de ${es.w} de surface, soit une prime estimée de <b>${eur(es.lo)} à ${eur(es.hi)}</b> pour la déstratification. Les relevés de la visite remplacent cette hypothèse.</p>`:'<p class="sm mut">Le tableau sera établi dès que les puissances seront relevées.</p>')}
  <h2>2. Ce que la visite technique confirme</h2><p class="sm">Une visite de 30 minutes, gratuite et sans engagement, pour relever sur place :</p><ul class="sm tw">${todo}</ul>
  <h2>3. Les règles à respecter</h2><ul class="rg"><li>${nic("doc")}<span><b>La demande de prime précède la signature du devis.</b> La date d'engagement de l'opération est celle de l'acceptation du devis : signer avant ferait perdre la prime.</span></li><li>${nic("ok")}<span><b>Les installations sont contrôlées sur site.</b> Depuis le 1er août 2025, les déstratificateurs font l'objet d'un contrôle de chaque opération.</span></li></ul>
- <div class="nt-cta"><div><small>Pour sécuriser cette prime</small><b>Ne signez aucun devis avant d'avoir validé votre prime avec PACLIM.</b><span>Demandez votre visite technique à ${esc(me().nom)}.</span></div><div class="ntc"><b>${esc(me().tel||PAC.tel)}</b><span>${esc(me().email||PAC.mail)}</span></div></div>
+ <div class="nt-cta"><div><small>Pour sécuriser cette prime</small><b>Ne signez aucun devis avant d'avoir validé votre prime avec PACLIM.</b><span>Demandez votre visite technique.</span></div><div class="ntc"><b>${esc(me().tel||PAC.tel)}</b><span>${esc(me().email||PAC.mail)}</span></div></div>
  <p class="nt-fn">Montants indicatifs, hors contrat, calculés au ${today} sur les fiches d'opérations standardisées en vigueur (${vers}) et une valorisation de ${nf(sx.prixBas,1)} à ${nf(sx.prixHaut,1)} € par MWh cumac, qui varie avec le marché des CEE. L'éligibilité et le montant définitifs dépendent de la visite technique et du respect des conditions des fiches.</p></div>${foot(2)}</article></div>`}
 
 /* ============ CARTES (IGN Géoplateforme, licence ouverte) ============ */
