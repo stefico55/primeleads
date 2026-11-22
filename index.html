@@ -1564,6 +1564,7 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 #auErr{min-height:20px;margin:10px 0 0;color:#b3261e;font-size:14px}.aub{height:46px;border:0;border-radius:10px;background:#1a39d3;color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-top:6px}.aub:disabled{opacity:.6;cursor:default}.aub:hover:not(:disabled){background:#1530b0}
 #authF .lnk{margin-top:14px;text-align:center}
 #clb{margin-top:8px;font-size:12px;color:var(--mut);line-height:1.5}#clb .lnk{font-size:12px;padding:0}.cld{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#2e9e4f}.cld.sync{background:#d99a00}.cld.err{background:#d93025}
+.aub2{height:44px;border:1px solid #1a39d3;background:#fff;color:#1a39d3;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:10px}.aub2:hover:not(:disabled){background:#eef5fd}.aub2:disabled{opacity:.6}
 </style>
 </head>
 <body>
@@ -1583,7 +1584,7 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 <aside class="drawer" id="drawer" aria-label="Fiche prospect" aria-hidden="true"></aside>
 <div class="toast" id="toast" role="status"></div>
 <div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="card pad"><h2 id="dlgT"></h2><div id="dlgB"></div><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="dlgNo">Annuler</button><button class="btn p" id="dlgOk">Valider</button></div></div></div>
-<div id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="authT"><form id="authF" novalidate><div class="aulg" id="auLg"></div><h1 id="authT">Connexion</h1><p class="aus">Accède à tes bâtiments et à ton équipe.</p><label for="auE">E-mail</label><input id="auE" type="email" autocomplete="username" required><label for="auP">Mot de passe</label><input id="auP" type="password" autocomplete="current-password" required><p id="auErr" role="alert"></p><button class="aub" id="auGo" type="submit">Se connecter</button><button class="lnk" id="auDemo" type="button">Voir la démo (données locales, rien n'est enregistré en ligne)</button></form></div>
+<div id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="authT"><form id="authF" novalidate><div class="aulg" id="auLg"></div><h1 id="authT">Connexion</h1><p class="aus">Accède à tes bâtiments et à ton équipe.</p><label for="auE">E-mail</label><input id="auE" type="email" autocomplete="username" required><label for="auP">Mot de passe</label><input id="auP" type="password" autocomplete="current-password" required><p id="auErr" role="alert"></p><button class="aub" id="auGo" type="submit">Se connecter</button><button class="aub2" id="auMagic" type="button">Recevoir un lien de connexion par e-mail</button><button class="lnk" id="auDemo" type="button">Voir la démo (données locales, rien n'est enregistré en ligne)</button></form></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="window.__sbReady&&window.__sbReady()" onerror="window.__sbFail&&window.__sbFail()"></script>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -2258,9 +2259,15 @@ async function clStart(session){const uid=session.user.id;
 async function clOut(){try{await CL.sb.auth.signOut()}catch(e){}CL.on=false;sessionStorage.removeItem("pl_demo");location.reload()}
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState!=="visible"||!CL.on||CL.busy||CL.t||sel)return;try{const k=JSON.stringify(S.leads.map(l=>l.id+JSON.stringify(l)));await clLoad();if(k!==JSON.stringify(S.leads.map(l=>l.id+JSON.stringify(l))))render()}catch(e){}});
 $("#authF").onsubmit=async e=>{e.preventDefault();const em=$("#auE").value.trim(),pw=$("#auP").value;if(!em||!pw){$("#auErr").textContent="Renseigne ton e-mail et ton mot de passe.";return}
- const go=$("#auGo");go.disabled=true;go.textContent="Connexion…";$("#auErr").textContent="";
+ const go=$("#auGo");go.disabled=true;go.textContent="Connexion…";$("#auErr").textContent="";$("#auErr").style.color="";
  try{const {data,error}=await CL.sb.auth.signInWithPassword({email:em,password:pw});if(error)throw error;$("#auP").value="";await clStart(data.session)}
  catch(err){$("#auErr").textContent=clMsg(err)}finally{go.disabled=false;go.textContent="Se connecter"}};
+$("#auMagic").onclick=async()=>{const em=$("#auE").value.trim();if(!em){$("#auErr").textContent="Saisis d'abord ton e-mail.";$("#auE").focus();return}
+ const b=$("#auMagic");b.disabled=true;$("#auErr").textContent="";
+ try{const {error}=await CL.sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});if(error)throw error;
+  $("#auErr").style.color="#1d6b34";$("#auErr").textContent="Lien envoyé à "+em+". Ouvre l'e-mail et clique sur le lien (pense aux courriers indésirables)."}
+ catch(err){$("#auErr").style.color="";$("#auErr").textContent=/rate|seconds|limit/i.test(err.message||"")?"Trop de demandes : patiente une minute avant de réessayer.":/signups? not allowed|not found/i.test(err.message||"")?"Aucun compte pour cet e-mail. Demande à ton administrateur de t'ajouter.":clMsg(err)}
+ finally{b.disabled=false}};
 $("#auDemo").onclick=()=>{sessionStorage.setItem("pl_demo","1");hideAuth();render()};
 async function boot(){
  if(!window.supabase||sessionStorage.getItem("pl_demo")){render();return}
