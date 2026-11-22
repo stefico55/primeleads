@@ -1557,6 +1557,13 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 @keyframes agp{0%{box-shadow:0 0 0 0 rgba(217,48,37,.45)}100%{box-shadow:0 0 0 12px rgba(217,48,37,0)}}
 @media(prefers-reduced-motion:reduce){.agmic.on{animation:none}}
 .logo{cursor:pointer}.logo:focus-visible{outline:2px solid #1a39d3;outline-offset:-3px}
+#auth{position:fixed;inset:0;z-index:300;background:#eef5fd;display:grid;place-items:center;padding:20px;overflow:auto}#auth[hidden]{display:none}
+#authF{width:min(400px,100%);background:#fff;border-radius:16px;padding:32px 30px 26px;box-shadow:0 10px 40px rgba(15,42,84,.12);display:flex;flex-direction:column}
+#authF .aulg img{height:50px;display:block;margin:-4px 0 14px -26px}#authF h1{font-size:22px;color:#0f2a54;margin:0 0 4px}.aus{margin:0 0 18px;color:#5b6b7d;font-size:14px}
+#authF label{font-size:13px;font-weight:600;color:#0f2a54;margin:10px 0 5px}#authF input{height:44px;border:1px solid #cfd8e3;border-radius:10px;padding:0 12px;font-size:16px}#authF input:focus-visible{outline:2px solid #1a39d3;outline-offset:1px}
+#auErr{min-height:20px;margin:10px 0 0;color:#b3261e;font-size:14px}.aub{height:46px;border:0;border-radius:10px;background:#1a39d3;color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-top:6px}.aub:disabled{opacity:.6;cursor:default}.aub:hover:not(:disabled){background:#1530b0}
+#authF .lnk{margin-top:14px;text-align:center}
+#clb{margin-top:8px;font-size:12px;color:var(--mut);line-height:1.5}#clb .lnk{font-size:12px;padding:0}.cld{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#2e9e4f}.cld.sync{background:#d99a00}.cld.err{background:#d93025}
 </style>
 </head>
 <body>
@@ -1576,6 +1583,8 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 <aside class="drawer" id="drawer" aria-label="Fiche prospect" aria-hidden="true"></aside>
 <div class="toast" id="toast" role="status"></div>
 <div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="card pad"><h2 id="dlgT"></h2><div id="dlgB"></div><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="dlgNo">Annuler</button><button class="btn p" id="dlgOk">Valider</button></div></div></div>
+<div id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="authT"><form id="authF" novalidate><div class="aulg" id="auLg"></div><h1 id="authT">Connexion</h1><p class="aus">Accède à tes bâtiments et à ton équipe.</p><label for="auE">E-mail</label><input id="auE" type="email" autocomplete="username" required><label for="auP">Mot de passe</label><input id="auP" type="password" autocomplete="current-password" required><p id="auErr" role="alert"></p><button class="aub" id="auGo" type="submit">Se connecter</button><button class="lnk" id="auDemo" type="button">Voir la démo (données locales, rien n'est enregistré en ligne)</button></form></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="window.__sbReady&&window.__sbReady()" onerror="window.__sbFail&&window.__sbFail()"></script>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
  * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade
@@ -1635,7 +1644,7 @@ const COLS={Tertiaire:"#24578f",Industrie:"#4f9a24"};
 
 /* ============ STOCKAGE (local ; Supabase ensuite, même interface) ============ */
 const KEY="paclim_leadpilot_v1";
-const Store={ok:true,load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){this.ok=false;return null}},save(s){try{localStorage.setItem(KEY,JSON.stringify(s));return true}catch(e){this.ok=false;toast("Sauvegarde impossible : exportez vos données");return false}}};
+const Store={ok:true,load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){this.ok=false;return null}},save(s){if(window.CL&&CL.on){CL.push();return true}try{localStorage.setItem(KEY,JSON.stringify(s));return true}catch(e){this.ok=false;toast("Sauvegarde impossible : exportez vos données");return false}}};
 let S=Store.load();
 if(!S||!S.leads)S={v:2,settings:{},user:0,leads:SEED.map(b=>({...b,statut:"new",q:{},journal:[]}))};
 // migration v1 -> v2
@@ -1644,7 +1653,7 @@ if(!S.settings.team)S.settings.team=(S.settings.users||["Commercial 1","Commerci
 const rid=()=>"p"+Math.random().toString(36).slice(2,8);
 const tcase=s=>s.toLowerCase().replace(/(^|[\s'-])(\S)/g,(m,a,b)=>a+b.toUpperCase());
 const DECR=/pr[ée]sident|directeur g|g[ée]rant|pouvoir d/i;
-function migr(){S.leads.forEach(l=>{if(!l.people){l.people=[];const m=(l.dirigeant||"").trim().match(/^(.*)\((.*)\)\s*$/);if(m&&DECR.test(m[2])&&m[1].trim())l.people.push({id:rid(),n:tcase(m[1].trim()),f:m[2].trim(),o:l.entreprise||"",t:"",e:"",src:"RNE"})}if(!l.autres)l.autres=[]})}
+function migr(){{const seen=new Set();S.leads.forEach(l=>{let id=String(l.id),n=1;while(seen.has(id)){n++;id=l.id+"-"+n}if(id!==String(l.id)){l.id=id}seen.add(id)})}S.leads.forEach(l=>{if(!l.people){l.people=[];const m=(l.dirigeant||"").trim().match(/^(.*)\((.*)\)\s*$/);if(m&&DECR.test(m[2])&&m[1].trim())l.people.push({id:rid(),n:tcase(m[1].trim()),f:m[2].trim(),o:l.entreprise||"",t:"",e:"",src:"RNE"})}if(!l.autres)l.autres=[]})}
 migr();
 S.v=2;const save=()=>Store.save(S);save();
 addEventListener("storage",e=>{if(e.key===KEY){S=Store.load()||S;render()}});
@@ -2212,7 +2221,54 @@ $$(".nav button").forEach(b=>b.onclick=()=>{if(b.dataset.v==="agent"){openAgent(
 $("#user").onchange=e=>{S.user=+e.target.value;save();render()};
 $("#scrim").onclick=closeLead;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if($("#dlg").classList.contains("on"))$("#dlg").classList.remove("on");else if(sel)closeLead()}});
-render();
+/* ============ CLOUD (Supabase) : connexion + sauvegarde en ligne ============ */
+window.PLS=()=>S;window.PLSAVE=()=>save();window.CL={on:false,sb:null,org:null,uid:null,email:null,role:null,nom:"",known:new Map(),regJ:"",t:null,busy:false,again:false,warned:false,url:"https://ypmwhynacdynjvylacwl.supabase.co",key:"sb_publishable_hfh92ZmPEDl5_SlxlVvOug_jBg2t9vz"};
+const clMsg=e=>{const m=(e&&e.message)||"";return /invalid login/i.test(m)?"E-mail ou mot de passe incorrect.":/confirm/i.test(m)?"Adresse e-mail non confirmée.":/fetch|network|failed/i.test(m)?"Connexion impossible : vérifie ta connexion internet.":m||"Erreur inconnue"};
+function showAuth(msg){const a=$("#auth");a.hidden=false;const lg=document.querySelector(".logo .lgf img");$("#auLg").innerHTML=lg?`<img alt="PrimeLeads" src="${lg.src}">`:"";$("#auErr").textContent=msg||"";setTimeout(()=>$("#auE").focus(),50)}
+function hideAuth(){$("#auth").hidden=true}
+CL.push=()=>{clearTimeout(CL.t);CL.t=setTimeout(clSync,700)};
+function clBadge(st){let b=$("#clb");if(!b){b=document.createElement("div");b.id="clb";const u=$("#user");u.parentElement.appendChild(b);b.onclick=e=>{if(e.target.id==="clo")clOut()}}
+ b.innerHTML=CL.on?`<span class="cld ${st||"ok"}" aria-hidden="true"></span><span class="clt">${st==="sync"?"Enregistrement…":st==="err"?"Non enregistré — nouvelle tentative":"Enregistré en ligne"} · ${esc(CL.email||"")}</span> <button class="lnk" id="clo" type="button">Se déconnecter</button>`:""}
+async function clSync(){if(!CL.on)return;if(CL.busy){CL.again=true;return}CL.busy=true;clBadge("sync");
+ try{const cur=new Map(S.leads.map(l=>[String(l.id),JSON.stringify(l)])),now=new Date().toISOString();
+  const up=[...cur].filter(([id,j])=>CL.known.get(id)!==j).map(([id,j])=>{const d=JSON.parse(j);return{org_id:CL.org,ref:id,data:d,statut:d.statut||"new",updated_by:CL.uid,updated_at:now}});
+  for(let i=0;i<up.length;i+=200){const {error}=await CL.sb.from("batiments").upsert(up.slice(i,i+200),{onConflict:"org_id,ref"});if(error)throw error}
+  up.forEach(r=>CL.known.set(r.ref,cur.get(r.ref)));
+  const gone=[...CL.known.keys()].filter(id=>!cur.has(id));
+  if(gone.length){const {error}=await CL.sb.from("batiments").delete().eq("org_id",CL.org).in("ref",gone);if(error)throw error;gone.forEach(id=>CL.known.delete(id))}
+  if(CL.role==="admin"){const rj=JSON.stringify({settings:S.settings,stop:S.stop||[]});if(rj!==CL.regJ){const {error}=await CL.sb.from("reglages").upsert({org_id:CL.org,value:JSON.parse(rj),updated_at:now},{onConflict:"org_id"});if(error)throw error;CL.regJ=rj}}
+  clBadge("ok")}
+ catch(e){clBadge("err");if(!CL.warned){CL.warned=true;toast("Enregistrement en ligne impossible : "+clMsg(e))}setTimeout(clSync,5000)}
+ finally{CL.busy=false;if(CL.again){CL.again=false;CL.push()}}}
+async function clLoad(){const [b,r]=await Promise.all([CL.sb.from("batiments").select("ref,data").eq("org_id",CL.org).limit(5000),CL.sb.from("reglages").select("value").eq("org_id",CL.org).maybeSingle()]);
+ if(b.error)throw b.error;if(r.error)throw r.error;
+ S.leads=b.data.map(x=>x.data);CL.known=new Map(b.data.map(x=>[String(x.ref),JSON.stringify(x.data)]));
+ if(r.data&&r.data.value){Object.assign(S.settings,r.data.value.settings||{});S.stop=r.data.value.stop||S.stop||[];CL.regJ=JSON.stringify({settings:S.settings,stop:S.stop||[]})}
+ S.settings.prixBas??=6.5;S.settings.prixHaut??=8.7;S.settings.wBas??=30;S.settings.wHaut??=60;S.settings.validite??=30;
+ if(!S.settings.team)S.settings.team=[{nom:CL.nom||"Commercial 1",tel:"",email:CL.email}];
+ const i=S.settings.team.findIndex(t=>t.nom===CL.nom);S.user=i>=0?i:0;migr()}
+async function clStart(session){const uid=session.user.id;
+ const m=await CL.sb.from("membres").select("org_id,nom,role").eq("user_id",uid).limit(1);
+ if(m.error)throw m.error;
+ if(!m.data.length){await CL.sb.auth.signOut();throw new Error("Ton compte n'est rattaché à aucune organisation. Demande à ton administrateur de t'ajouter.")}
+ Object.assign(CL,{uid,email:session.user.email,org:m.data[0].org_id,role:m.data[0].role,nom:m.data[0].nom});
+ await clLoad();CL.on=true;hideAuth();
+ if(!S.leads.length&&CL.role==="admin"){ask("Organisation vide","<p>Aucun bâtiment en ligne pour le moment. Importer les 30 bâtiments de Corbas pour démarrer ?</p>",()=>{S.leads=SEED.map(b=>({...b,statut:"new",q:{},journal:[]}));migr();save();render();toast("30 bâtiments importés");return true})}
+ clBadge("ok");render()}
+async function clOut(){try{await CL.sb.auth.signOut()}catch(e){}CL.on=false;sessionStorage.removeItem("pl_demo");location.reload()}
+document.addEventListener("visibilitychange",async()=>{if(document.visibilityState!=="visible"||!CL.on||CL.busy||CL.t||sel)return;try{const k=JSON.stringify(S.leads.map(l=>l.id+JSON.stringify(l)));await clLoad();if(k!==JSON.stringify(S.leads.map(l=>l.id+JSON.stringify(l))))render()}catch(e){}});
+$("#authF").onsubmit=async e=>{e.preventDefault();const em=$("#auE").value.trim(),pw=$("#auP").value;if(!em||!pw){$("#auErr").textContent="Renseigne ton e-mail et ton mot de passe.";return}
+ const go=$("#auGo");go.disabled=true;go.textContent="Connexion…";$("#auErr").textContent="";
+ try{const {data,error}=await CL.sb.auth.signInWithPassword({email:em,password:pw});if(error)throw error;$("#auP").value="";await clStart(data.session)}
+ catch(err){$("#auErr").textContent=clMsg(err)}finally{go.disabled=false;go.textContent="Se connecter"}};
+$("#auDemo").onclick=()=>{sessionStorage.setItem("pl_demo","1");hideAuth();render()};
+async function boot(){
+ if(!window.supabase||sessionStorage.getItem("pl_demo")){render();return}
+ try{CL.sb=supabase.createClient(CL.url,CL.key,{auth:{persistSession:true,autoRefreshToken:true}});
+  const {data}=await CL.sb.auth.getSession();
+  if(data.session){try{await clStart(data.session)}catch(e){showAuth(clMsg(e))}}else showAuth()}
+ catch(e){render()}}
+if(window.supabase)boot();else{window.__sbFail=()=>{if(window.__sbReady){window.__sbReady=null;render()}};window.__sbReady=()=>{window.__sbReady=null;boot()};setTimeout(()=>{if(window.__sbReady){window.__sbReady=null;render()}},4000)}
 }
 </script>
 </body>
