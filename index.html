@@ -1476,6 +1476,18 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 .nt-in{margin:6mm 0 5mm}
 .bd+h2{margin-top:9mm}
 .page.nt .pg-body{padding-top:2mm}.page.nt h2:first-child{margin-top:5mm}.bd{padding:4mm 6mm}.bd+h2{margin-top:7mm}.nt-in{margin:5mm 0 4mm}.scs{gap:5mm}.pg2{padding-top:5mm!important}.pg2 .nt-cta{margin-top:10mm}
+
+/* NOTE v6 */
+.page.nt h2{border-bottom:0;padding-bottom:0;color:#3d7f1a;margin:8mm 0 4mm}
+.nt-st{border-bottom:0;padding-bottom:0;color:#3d7f1a}
+.pg1 .nt-h+.pg-body,.page.nt .pg-body{padding-top:9mm}
+.cl{margin-top:0}
+.tls+.nt-in{margin-top:9mm}
+.nt-in{margin-bottom:8mm}
+.bd+h2{margin-top:10mm}
+.nt-fn{background:#eef3f9;border-radius:2mm;padding:4mm 5mm;font-size:7.8pt;color:#33465c;line-height:1.5}
+.pg2 h2{margin:9mm 0 3.5mm!important}
+.sc-l{border-top:0;padding-top:1mm}
 </style>
 </head>
 <body>
@@ -1798,7 +1810,7 @@ function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),ok=r.fiches.filter(
  ${!q.contact||!r.hi?`<div class="note-warn noprint">${!r.hi?"Fourchette non calculée : la note affichera « éligibilité potentielle ». ":""}${!q.contact?"Interlocuteur non renseigné.":""}</div>`:""}
  <div class="note"><article class="page nt"><div class="nt-h"><div class="nt-logo">${LOGO_FULL}</div><div class="nt-tt"><h1>Note d'éligibilité CEE</h1><span>Certificats d'économies d'énergie</span><em>${today} · réf. ${ref}</em></div></div>
  <div class="pg-body">
- <h2>Votre site</h2><div class="cl">${nic("bat")}<div><small>Entreprise</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i></div><div class="cl-a">${nic("pin")}<div><small>Adresse</small><b>${esc(l.adresse)}, ${l.cp} ${esc(l.ville)}</b></div></div></div><div class="tls">${tile("surf","Surface",nf(surf)+" m²"+`<i>${q.surfChauffee?"chauffés":"au sol"}</i>`)}${tile("haut","Hauteur",haut)}${tile("fire","Chauffage",chf)}${tile("snow","Groupe froid",frd)}</div>
+ <div class="cl">${nic("bat")}<div><small>Entreprise</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i></div><div class="cl-a">${nic("pin")}<div><small>Adresse</small><b>${esc(l.adresse)}, ${l.cp} ${esc(l.ville)}</b></div></div></div><div class="tls">${tile("surf","Surface",nf(surf)+" m²"+`<i>${q.surfChauffee?"chauffés":"au sol"}</i>`)}${tile("haut","Hauteur",haut)}${tile("fire","Chauffage",chf)}${tile("snow","Groupe froid",frd)}</div>
  <p class="nt-in">Les Certificats d'économies d'énergie (CEE) financent une partie des équipements qui réduisent la consommation des bâtiments professionnels. À partir de la surface, de la hauteur et du type d'activité de votre site, PACLIM a identifié ${ok.length>1?ok.length+" solutions":"une solution"} qui peu${ok.length>1?"vent":"t"} ouvrir droit à cette prime. Elle${ok.length>1?"s sont":" est"} détaillée${ok.length>1?"s":""} ci-dessous, avec l'ordre de grandeur des équipements concernés.</p>
  ${band}
  <h2>Solutions pressenties</h2><div class="scs">${ok.map(card).join("")||'<p class="mut">À définir lors de la visite technique.</p>'}</div></div>${foot(1)}</article>
