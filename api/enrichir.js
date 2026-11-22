@@ -2,7 +2,8 @@
 const L=require("./_lib.js");
 const UA="Mozilla/5.0 (compatible; PrimeLeadsBot/1.0; +https://primeleads-app.vercel.app)";
 const T0=()=>Date.now();
-async function get(url,ms=4500,opt={}){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{signal:c.signal,redirect:"follow",headers:{"user-agent":UA,"accept-language":"fr-FR,fr;q=0.9","accept":"text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.5"},...opt});if(!r.ok)return null;const ct=r.headers.get("content-type")||"";if(!/html|json|text/.test(ct))return null;const b=await r.text();return{url:r.url,body:b.slice(0,400000)}}catch(e){return null}finally{clearTimeout(t)}}
+const DBG=[];
+async function get(url,ms=4500,opt={}){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{signal:c.signal,redirect:"follow",headers:{"user-agent":UA,"accept-language":"fr-FR,fr;q=0.9","accept":"text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.5"},...opt});DBG.push(url.slice(0,70)+" -> "+r.status);if(!r.ok)return null;const ct=r.headers.get("content-type")||"";if(!/html|json|text/.test(ct))return null;const b=await r.text();return{url:r.url,body:b.slice(0,400000)}}catch(e){DBG.push(url.slice(0,70)+" ERR "+(e&&(e.cause&&e.cause.code||e.name||e.message)));return null}finally{clearTimeout(t)}}
 async function osm(lat,lng,nom){if(!lat||!lng)return null;const q=`[out:json][timeout:8];nwr(around:90,${lat},${lng})["name"];out tags center 40;`;
  const r=await get("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),9000);if(!r)return null;let j;try{j=JSON.parse(r.body)}catch(e){return null}
  const w=L.nz(nom).replace(/\b(sas|sarl|eurl|sa|sci|groupe)\b/g," ").split(" ").filter(x=>x.length>2);
@@ -23,7 +24,7 @@ module.exports=async(req,rsp)=>{
  const o=String(req.headers.origin||req.headers.referer||"");if(o&&!/primeleads|localhost|127\.0\.0\.1/.test(o))return rsp.status(403).json({err:"origine"});
  const nom=String(p.nom||"").slice(0,120);if(!nom)return rsp.status(400).json({err:"nom"});
  const q={nom,siren:String(p.siren||"").replace(/\D/g,"").slice(0,9),siret:String(p.siret||"").replace(/\D/g,"").slice(0,14),cp:String(p.cp||"").slice(0,5),ville:String(p.ville||"").slice(0,60),lat:+p.lat||0,lng:+p.lng||0,site:String(p.site||"")};
- const t0=T0(),src=[],out={tel:null,email:null,site:null,social:{},fiab:"aucune",src,tried:[]};
+ DBG.length=0;const t0=T0(),src=[],out={tel:null,email:null,site:null,social:{},fiab:"aucune",src,tried:[]};
  // 1. OpenStreetMap (gratuit) + site déjà connu, en parallèle avec les domaines probables
  const cand=new Set();if(q.site&&L.hostOk(q.site)){try{cand.add(new URL(q.site).origin)}catch(e){}}
  const [o1]=await Promise.all([osm(q.lat,q.lng,nom)]);
@@ -41,5 +42,5 @@ module.exports=async(req,rsp)=>{
   const em=best.email.sort((a,b)=>(b.endsWith("@"+dom))-(a.endsWith("@"+dom)));
   out.email=em[0]||null;out.emails=em.slice(0,4);out.tel=(best.tel.find(x=>!x.mobile)||best.tel[0]||{}).v||null;out.tels=best.tel.slice(0,4).map(x=>x.v);out.fiab=best.ident?"verifie":"probable"}
  if(o1){if(!out.tel&&o1.tel){out.tel=o1.tel;out.tels=[o1.tel]}if(!out.email&&o1.email){out.email=o1.email;out.emails=[o1.email]}if(!out.site&&o1.site)out.site=o1.site;if(out.fiab==="aucune"&&(o1.tel||o1.email||o1.site))out.fiab="probable"}
- out.ms=Date.now()-t0;return rsp.status(200).json(out)};
+ out.ms=Date.now()-t0;if(p.debug)out.dbg=DBG.slice(0,25);return rsp.status(200).json(out)};
 module.exports.config={maxDuration:30};
