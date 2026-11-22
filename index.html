@@ -1466,6 +1466,16 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 .pg2 .nt-cta{margin-top:12mm}.pg2 ul.tw{padding-top:0;margin-top:3mm}.pg2 ul.tw li{margin:0 0 2mm;break-inside:avoid}.pg2 h2{margin:8mm 0 3mm!important}
 .nt-in{margin:0 0 4mm;font-size:10pt;line-height:1.6;color:#0b192c}.page.nt h2+.scs{margin-top:0}
 .nt-in{margin-top:7mm}.nt-in+h2{margin-top:5mm}
+
+/* NOTE v5 : hiérarchie typographique */
+.nt-h{padding:9mm 15mm}.nt-logo svg{height:13mm}.nt-tt h1{font-size:18pt}.nt-h2 .nt-tt h1{font-size:18pt}
+.page.nt .pg-body{padding-top:8mm}
+.page.nt h2{font-size:12.5pt;margin:7mm 0 3.5mm;padding-bottom:2mm;border-bottom:.3mm solid #dbe3ec}
+.nt-st{font-size:18pt}
+.bd{margin:2mm 0 0;padding:5mm 6mm}.bd small{font-size:12pt}.bd span{font-size:8.5pt;margin-top:1mm}.bd b{font-size:17pt}
+.nt-in{margin:6mm 0 5mm}
+.bd+h2{margin-top:9mm}
+.page.nt .pg-body{padding-top:2mm}.page.nt h2:first-child{margin-top:5mm}.bd{padding:4mm 6mm}.bd+h2{margin-top:7mm}.nt-in{margin:5mm 0 4mm}.scs{gap:5mm}.pg2{padding-top:5mm!important}.pg2 .nt-cta{margin-top:10mm}
 </style>
 </head>
 <body>
@@ -1783,13 +1793,14 @@ function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),ok=r.fiches.filter(
  const calcRows=ok.filter(f=>f.kwhc).map(f=>`<tr><td><b>${f.fiche}</b> ${f.nom}</td><td class="n">${nf(f.kwhc)}</td><td class="n">${eur(f.kwhc/1000*sx.prixBas)} à ${eur(f.kwhc/1000*sx.prixHaut)}</td></tr>`).join("");
  const rel=[...new Set(ok.flatMap(f=>f.msgs))];const todo=(rel.length?rel:["Hauteur sous plafond","Type et puissance du chauffage","Puissance électrique et condensation du groupe froid","Activité du local"]).map(m=>`<li>${esc(m)}</li>`).join("");
  const vers=ok.map(f=>`${f.fiche} v. ${BAREMES[f.fiche].version.split(",")[0]}`).join(" · ");
- const band=!r.hi&&es?`<div class="bd"><div><small>Éligibilité potentielle : prime CEE estimée</small><span>Estimation avant visite sur hypothèse de puissance de chauffage (${es.w}), confirmée après relevés</span></div><b>${eur(es.lo)} à ${eur(es.hi)}</b></div>`:r.hi?`<div class="bd"><div><small>Éligibilité potentielle : prime CEE estimée</small><span>Fourchette indicative avant visite technique, confirmée après</span></div><b>${eur(r.lo)} à ${eur(r.hi)}</b></div>`:`<div class="bd"><div><small>Éligibilité potentielle</small><span>Fourchette chiffrée dès que les puissances de chauffage et de froid sont relevées</span></div><b>à chiffrer</b></div>`;
+ const band=!r.hi&&es?`<div class="bd"><div><small>Éligibilité potentielle</small><span>Prime CEE estimée avant visite, sur hypothèse de chauffage (${es.w}). Confirmée après relevés.</span></div><b>${eur(es.lo)} à ${eur(es.hi)}</b></div>`:r.hi?`<div class="bd"><div><small>Éligibilité potentielle</small><span>Prime CEE estimée avant visite technique, confirmée après relevés.</span></div><b>${eur(r.lo)} à ${eur(r.hi)}</b></div>`:`<div class="bd"><div><small>Éligibilité potentielle</small><span>Fourchette chiffrée dès que les puissances de chauffage et de froid sont relevées</span></div><b>à chiffrer</b></div>`;
  return `<div class="row noprint" style="justify-content:space-between"><p class="sm mut" style="margin:0">Aperçu A4, 2 pages, aux couleurs PACLIM. Les fiches non éligibles n'y figurent pas.</p><button class="btn g" id="print">Imprimer / PDF</button></div>
  ${!q.contact||!r.hi?`<div class="note-warn noprint">${!r.hi?"Fourchette non calculée : la note affichera « éligibilité potentielle ». ":""}${!q.contact?"Interlocuteur non renseigné.":""}</div>`:""}
  <div class="note"><article class="page nt"><div class="nt-h"><div class="nt-logo">${LOGO_FULL}</div><div class="nt-tt"><h1>Note d'éligibilité CEE</h1><span>Certificats d'économies d'énergie</span><em>${today} · réf. ${ref}</em></div></div>
- <div class="pg-body"><p class="nt-for">Étude établie par PACLIM pour <b>${esc(l.entreprise||"votre société")}</b>${q.contact?`, à l'attention de ${esc(q.contact)}`:""}.</p>${band}
+ <div class="pg-body">
  <h2>Votre site</h2><div class="cl">${nic("bat")}<div><small>Entreprise</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i></div><div class="cl-a">${nic("pin")}<div><small>Adresse</small><b>${esc(l.adresse)}, ${l.cp} ${esc(l.ville)}</b></div></div></div><div class="tls">${tile("surf","Surface",nf(surf)+" m²"+`<i>${q.surfChauffee?"chauffés":"au sol"}</i>`)}${tile("haut","Hauteur",haut)}${tile("fire","Chauffage",chf)}${tile("snow","Groupe froid",frd)}</div>
  <p class="nt-in">Les Certificats d'économies d'énergie (CEE) financent une partie des équipements qui réduisent la consommation des bâtiments professionnels. À partir de la surface, de la hauteur et du type d'activité de votre site, PACLIM a identifié ${ok.length>1?ok.length+" solutions":"une solution"} qui peu${ok.length>1?"vent":"t"} ouvrir droit à cette prime. Elle${ok.length>1?"s sont":" est"} détaillée${ok.length>1?"s":""} ci-dessous, avec l'ordre de grandeur des équipements concernés.</p>
+ ${band}
  <h2>Solutions pressenties</h2><div class="scs">${ok.map(card).join("")||'<p class="mut">À définir lors de la visite technique.</p>'}</div></div>${foot(1)}</article>
  <article class="page nt"><div class="nt-h nt-h2"><div class="nt-logo">${LOGO_FULL}</div><div class="nt-tt"><h1>Note d'éligibilité CEE</h1><span>Certificats d'économies d'énergie</span><em>${esc(l.entreprise||"")} · réf. ${ref}</em></div></div>
  <div class="pg-body pg2"><h1 class="nt-st">Comment cette fourchette est établie</h1><h2>1. Le calcul de la prime</h2><p class="sm">Chaque fiche d'opération fixe un volume d'économies d'énergie, en kWh cumac, selon la puissance de vos équipements et la zone climatique${r.zone?` (${r.zone} pour votre site)`:""}. Ce volume est valorisé entre ${nf(sx.prixBas,1)} et ${nf(sx.prixHaut,1)} € par MWh cumac.</p>
