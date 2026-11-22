@@ -1523,6 +1523,40 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
 .agr{display:grid;gap:8px;margin-top:10px}.agr label{display:flex;gap:8px;align-items:center;font-size:14px}
 .agf{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #e1e6ee;background:#fff}.agf input{flex:1;border:1px solid #cfd8e3;border-radius:10px;padding:11px 14px;font-size:14.5px}
 @media(max-width:700px){.agp{height:96vh;border-radius:12px}}
+
+/* AGENT : lisibilité */
+.agp{width:min(900px,100%);height:min(840px,93vh)}
+.agh{padding:18px 24px}.agh b{font-size:18px}.agh small{font-size:13px}
+.agbody{padding:24px 28px;gap:20px;background:#f6f8fb}
+.aga{max-width:100%;gap:14px}.agav{width:34px;height:34px}.agav .ic{width:18px;height:18px}
+.aga>div{flex:1;min-width:0}
+.agb{font-size:16px;line-height:1.65;padding:16px 18px;border-radius:6px 16px 16px 16px;box-shadow:0 1px 2px rgba(11,25,44,.05)}
+.agb b{color:#04203A}.agb ul{margin:10px 0 0;padding-left:20px}.agb li{margin:5px 0}
+.agn{font-size:13.5px;line-height:1.5;margin-top:12px;padding-top:10px;border-top:1px solid #e8edf3}
+.agu{font-size:16px;padding:12px 18px;max-width:70%}
+.agch{gap:10px;margin-top:14px}
+.agc{font-size:14.5px;padding:10px 18px;border-radius:999px;min-height:42px}
+.agc.main{background:#1a39d3;color:#fff;border-color:#1a39d3}.agc.main:hover{background:#1530ad}
+.agk{display:grid;gap:12px;margin-top:14px}
+.agk1{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;border:1px solid #dfe6ef;border-radius:12px;padding:16px 18px;background:#fbfcfe}
+.agk-t{display:flex;align-items:center;gap:10px}.agk-t b{font-size:17px;color:#04203A}
+.agk-s{background:#e7f3dd;color:#2f6d12;font-weight:700;font-size:13px;border-radius:999px;padding:2px 10px}
+.agk-i{margin-top:3px;font-size:14px;color:#46525f}
+.agk-m ul{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:4px}.agk-m li{position:relative;padding-left:20px;font-size:14.5px;line-height:1.45;color:#0b192c}
+.agk-m li:before{content:"";position:absolute;left:3px;top:.55em;width:9px;height:5px;border-left:2px solid #4f9a24;border-bottom:2px solid #4f9a24;transform:rotate(-45deg) translateY(-50%)}
+.agk-p{text-align:right;display:grid;gap:4px;justify-items:end}.agk-p small{font-size:12.5px;color:#46525f}.agk-p b{font-size:18px;color:#2f6d12;white-space:nowrap}.agk-p .btn{margin-top:8px}
+.agl>div{padding:12px 16px;font-size:15px}
+.agm{font-size:14.5px;line-height:1.55;padding:14px 16px}
+.agf{padding:16px 24px}.agf input{font-size:16px;padding:14px 16px}.agf .btn{font-size:15px;padding:0 24px}
+@media(max-width:760px){.agk1{grid-template-columns:1fr}.agk-p{text-align:left;justify-items:start}.agbody{padding:16px}}
+
+.agpl{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border:1px solid #cfd8e3;background:#fff;color:#1a39d3;border-radius:999px;padding:5px 12px 5px 9px;font-size:13px;font-weight:600;cursor:pointer}
+.agpl svg{width:15px;height:15px}.agpl:hover{background:#eef5fd}.agpl.on{background:#1a39d3;color:#fff;border-color:#1a39d3}
+.agmic{flex:none;width:50px;border:1px solid #cfd8e3;background:#fff;color:#1a39d3;border-radius:10px;display:grid;place-items:center;cursor:pointer}.agmic svg{width:22px;height:22px}.agmic:hover{background:#eef5fd}
+.agmic.on{background:#d93025;border-color:#d93025;color:#fff;animation:agp 1.2s infinite}
+@keyframes agp{0%{box-shadow:0 0 0 0 rgba(217,48,37,.45)}100%{box-shadow:0 0 0 12px rgba(217,48,37,0)}}
+@media(prefers-reduced-motion:reduce){.agmic.on{animation:none}}
+.logo{cursor:pointer}.logo:focus-visible{outline:2px solid #1a39d3;outline-offset:-3px}
 </style>
 </head>
 <body>
@@ -2016,7 +2050,7 @@ function agBrief(){const due2=S.leads.filter(due),todo=S.leads.filter(l=>l.pros&
 /* ---- moteur de dialogue ---- */
 const AG_START=[["Cibler de nouveaux prospects","cible"],["Confirmer un lead","confirm"],["Question sur les CEE","cee"],["Brief du matin","brief"],["Mes routines","routines"]];
 function agSay(html,opts={}){AG.msgs.push({r:"a",h:html,...opts});agDraw()}
-function agYou(t){AG.msgs.push({r:"u",h:esc(t)});agDraw()}
+function agYou(t){agStopSpeak();AG.msgs.push({r:"u",h:esc(t)});agDraw()}
 function agStep(kind,payload){
  if(kind==="cible"){AG.brief={};return agAsk("sect")}
  if(kind==="confirm"){const L=S.leads.filter(l=>l.pros).concat(S.leads.filter(l=>!l.pros)).slice(0,6);return agSay("Quel lead veux-tu confirmer ? Je te dis ce qu'il manque et quoi demander.",{chips:L.map(l=>[l.entreprise,"lead:"+l.id])})}
@@ -2040,7 +2074,7 @@ function agNextMissing(){const b=AG.brief;if(!b.sect)return"sect";if(b.surf==nul
 function agResult(){const b=AG.brief,L=agSelect(b);AG.sel=L.map(l=>l.id);
  if(!L.length)return agSay("Aucun bâtiment ne correspond à ces critères dans la base actuelle. On peut les assouplir.",{chips:[["Recommencer","refine"]]});
  const crit=[b.sect&&b.sect!=="*"?b.sect:"tous secteurs",b.surf?"≥ "+nf(b.surf)+" m²":null,...(b.crit||[]).map(c=>({froid:"avec froid",gaz:"chauffage gaz",dpe:"DPE E à G"}[c]))].filter(Boolean).join(", ");
- agSay(`J'ai retenu <b>${L.length} bâtiment${L.length>1?"s":""}</b> (${crit}), classés par adéquation. Rien n'est modifié tant que tu ne valides pas.<div class="agl">${L.map(l=>`<div><div><b>${esc(l.entreprise)}</b> <span class="mut">${score(l)} % · ${nf(l.surface)} m² · ${agPrime(l)}</span><div class="xs mut">${agWhy(l).map(esc).join(" · ")}</div></div><button class="btn" data-agc="lead:${esc(l.id)}">Détail</button></div>`).join("")}</div>`,{chips:[[`Ajouter les ${L.length} à ma prospection`,"addall"],["Préparer les e-mails","mails"],["Affiner","refine"]]})}
+ agSay(`J'ai retenu <b>${L.length} bâtiment${L.length>1?"s":""}</b> (${crit}), classés par adéquation. Rien n'est modifié tant que tu ne valides pas.<div class="agk">${L.map(l=>{const p=agPrime(l),hy=/hypothèse/.test(p);return `<div class="agk1"><div class="agk-m"><div class="agk-t"><b>${esc(l.entreprise)}</b><span class="agk-s">${score(l)} %</span></div><div class="agk-i">${nf(l.surface)} m²${l.dpe&&l.dpe!=="—"?" · DPE "+esc(l.dpe):""}</div><ul>${agWhy(l).map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div><div class="agk-p"><small>Prime estimée${hy?" (hypothèse)":""}</small><b>${p.replace(" (hypothèse)","")}</b><button class="btn" data-agc="lead:${esc(l.id)}">Voir le détail</button></div></div>`}).join("")}</div>`,{chips:[[`Ajouter les ${L.length} à ma prospection`,"addall"],["Préparer les e-mails","mails"],["Affiner","refine"]]})}
 function agAnswer(t){const e=agKnow(t);
  if(e)return agSay(e.a(),{chips:[["Autre question","cee"],["Cibler des prospects","cible"]]});
  const nt=agNorm(t),l=S.leads.find(x=>x.entreprise&&nt.includes(agNorm(x.entreprise)))||S.leads.find(x=>x.entreprise&&agNorm(x.entreprise).split(/\s+/).some(w=>w.length>3&&nt.includes(w)));
@@ -2056,16 +2090,36 @@ function agChip(v,lab){
  if(v.startsWith("b:")){const raw=v.slice(2);agYou(lab||raw);AG.await="brief";agParse(raw,AG.brief);const k=agNextMissing();if(k)return agAsk(k);AG.await=null;return agResult()}
  if(["cible","confirm","cee","brief","routines"].includes(v)){agYou(AG_START.find(a=>a[1]===v)?.[0]||v)}
  agStep(v)}
+
+/* ---- voix : dictée + lecture (fonctions du navigateur, sans coût) ---- */
+const AG_PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>',AG_STOP='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></svg>',AG_MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>';
+const AG_SR=window.SpeechRecognition||window.webkitSpeechRecognition;let agRec=null,agSpk=null;
+function agStopSpeak(){try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}$$(".agpl.on").forEach(b=>{b.classList.remove("on");b.innerHTML=AG_PLAY+"<span>Écouter</span>"});agSpk=null}
+function agSpeak(btn){if(!window.speechSynthesis){toast("Lecture vocale non disponible sur ce navigateur");return}
+ if(agSpk===btn){agStopSpeak();return}agStopSpeak();
+ const n=btn.parentElement.querySelector(".agb").cloneNode(true);n.querySelectorAll("button").forEach(x=>x.remove());
+ const txt=n.innerText.replace(/m²/g," mètres carrés").replace(/%/g," pour cent").replace(/\s+/g," ").trim();
+ const u=new SpeechSynthesisUtterance(txt);u.lang="fr-FR";u.rate=1;const v=speechSynthesis.getVoices().find(x=>/^fr(-|_)FR/i.test(x.lang))||speechSynthesis.getVoices().find(x=>/^fr/i.test(x.lang));if(v)u.voice=v;
+ u.onend=u.onerror=()=>{if(agSpk===btn)agStopSpeak()};agSpk=btn;btn.classList.add("on");btn.innerHTML=AG_STOP+"<span>Arrêter</span>";speechSynthesis.speak(u)}
+function agDictate(){const b=$("#agMic"),i=$("#agIn");
+ if(!AG_SR){toast("Dictée non disponible ici : utilise Chrome, Edge ou Safari");return}
+ if(agRec){agRec.stop();return}agStopSpeak();
+ const r=new AG_SR();agRec=r;r.lang="fr-FR";r.interimResults=true;r.continuous=false;let fin="";
+ b.classList.add("on");i.placeholder="Je t'écoute…";
+ r.onresult=e=>{let t="";for(const x of e.results){t+=x[0].transcript;if(x.isFinal)fin=t}i.value=t};
+ r.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed")toast("Micro refusé : autorise-le dans le navigateur")};
+ r.onend=()=>{agRec=null;b.classList.remove("on");i.placeholder="Écris ta demande ou une question sur les CEE…";const v=(i.value||fin).trim();if(v){i.value="";agHandle(v)}};
+ try{r.start()}catch(e){agRec=null;b.classList.remove("on")}}
 /* ---- rendu ---- */
-function agDraw(){const b=$("#agBody");if(!b)return;b.innerHTML=AG.msgs.map(m=>m.r==="u"?`<div class="agu">${m.h}</div>`:`<div class="aga"><span class="agav">${ICO.spark}</span><div><div class="agb">${m.h}</div>${m.chips?`<div class="agch">${m.chips.map(([t,v])=>`<button class="agc" data-agc="${esc(v)}" data-agl="${esc(t)}">${esc(t)}</button>`).join("")}</div>`:""}</div></div>`).join("");b.scrollTop=b.scrollHeight}
+function agDraw(){const b=$("#agBody");if(!b)return;b.innerHTML=AG.msgs.map(m=>m.r==="u"?`<div class="agu">${m.h}</div>`:`<div class="aga"><span class="agav">${ICO.spark}</span><div><div class="agb">${m.h}</div><button class="agpl" data-agp="1" aria-label="Écouter la réponse" title="Écouter la réponse">${AG_PLAY}<span>Écouter</span></button>${m.chips?`<div class="agch">${m.chips.map(([t,v])=>`<button class="agc${v==="addall"?" main":""}" data-agc="${esc(v)}" data-agl="${esc(t)}">${esc(t)}</button>`).join("")}</div>`:""}</div></div>`).join("");b.scrollTop=b.scrollHeight}
 function openAgent(){AG.open=true;$("#agent").classList.add("on");if(!AG.msgs.length){AG.msgs=[];agSay(`Bonjour ${esc((me().nom||"").split(" ")[0]||"")}, je suis ton agent CEE. Je connais les fiches et les règles, je cible les bons bâtiments et je prépare tes appels et e-mails. <b>Je ne modifie ni n'envoie rien sans ta validation.</b> Par où commence-t-on ?`,{chips:AG_START})}else agDraw();setTimeout(()=>$("#agIn")?.focus(),60)}
-function closeAgent(){AG.open=false;$("#agent").classList.remove("on")}
+function closeAgent(){agStopSpeak();if(agRec)try{agRec.abort()}catch(e){}AG.open=false;$("#agent").classList.remove("on")}
 {const d=document.createElement("div");d.className="agw";d.id="agent";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-label","Agent CEE");
- d.innerHTML=`<div class="agp"><div class="agh"><span class="agav big">${ICO.spark}</span><div><b>Agent CEE</b><small>Maquette · propose, ne fait rien sans ta validation</small></div><button class="btn" id="agRs" title="Nouvelle conversation">Nouveau</button><button class="x" id="agX" aria-label="Fermer">×</button></div><div class="agbody" id="agBody"></div><form class="agf" id="agF"><input id="agIn" autocomplete="off" placeholder="Écris ta demande ou une question sur les CEE…"><button class="btn p" type="submit">Envoyer</button></form></div>`;
+ d.innerHTML=`<div class="agp"><div class="agh"><span class="agav big">${ICO.spark}</span><div><b>Agent CEE</b><small>Maquette · propose, ne fait rien sans ta validation</small></div><button class="btn" id="agRs" title="Nouvelle conversation">Nouveau</button><button class="x" id="agX" aria-label="Fermer">×</button></div><div class="agbody" id="agBody"></div><form class="agf" id="agF"><button class="agmic" id="agMic" type="button" aria-label="Dicter" title="Dicter ta demande">${AG_MIC}</button><input id="agIn" autocomplete="off" placeholder="Écris ta demande ou une question sur les CEE…"><button class="btn p" type="submit">Envoyer</button></form></div>`;
  document.body.appendChild(d);
- d.addEventListener("click",e=>{if(e.target===d){closeAgent();return}const c=e.target.closest("[data-agc]");if(c)agChip(c.dataset.agc,c.dataset.agl)});
+ d.addEventListener("click",e=>{if(e.target===d){closeAgent();return}const pl=e.target.closest("[data-agp]");if(pl){agSpeak(pl);return}const c=e.target.closest("[data-agc]");if(c)agChip(c.dataset.agc,c.dataset.agl)});
  d.addEventListener("change",e=>{const c=e.target.closest("[data-agr]");if(c){(S.settings.agentRoutines=S.settings.agentRoutines||{})[c.dataset.agr]=c.checked;save();toast("Routine "+(c.checked?"activée":"désactivée"))}});
- $("#agX").onclick=closeAgent;$("#agRs").onclick=()=>{AG.msgs=[];AG.brief={};AG.sel=[];AG.await=null;openAgent()};
+ $("#agMic").onclick=agDictate;if(!AG_SR)$("#agMic").title="Dictée indisponible sur ce navigateur";$("#agX").onclick=closeAgent;$("#agRs").onclick=()=>{AG.msgs=[];AG.brief={};AG.sel=[];AG.await=null;openAgent()};
  $("#agF").onsubmit=e=>{e.preventDefault();const i=$("#agIn");const v=i.value;i.value="";agHandle(v)};
  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&AG.open&&!$("#dlg").classList.contains("on"))closeAgent()})}
 
@@ -2152,6 +2206,8 @@ function outcome(l,k){const done=(st,txt)=>{l.statut=st;l.lock=null;log(l,txt,"a
  else if(k==="mail"){done(l.statut==="rdv"?"rdv":"email","E-mail d'introduction envoyé")}
  else if(k==="bad")done("bad","Mauvais numéro");else if(k==="no")done("no","Pas intéressé");
  else if(k==="stop")ask("Ne plus appeler ?",`<p>Le prospect sera retiré de la liste et ne sera plus proposé.</p>`,()=>{S.leads=S.leads.filter(x=>x.id!==l.id);(S.stop=S.stop||[]).push({id:l.id,t:now(),by:me().nom});save();closeLead();toast("Retiré de la prospection")})}
+(()=>{const lg=$(".logo");if(!lg)return;lg.setAttribute("role","link");lg.setAttribute("aria-label","PrimeLeads, retour à la liste des bâtiments");lg.tabIndex=0;lg.title="Retour à la liste des bâtiments";
+ const go=()=>{if(typeof closeAgent==="function"&&AG.open)closeAgent();V="pros";render()};lg.onclick=go;lg.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}})();
 $$(".nav button").forEach(b=>b.onclick=()=>{if(b.dataset.v==="agent"){openAgent();return}V=b.dataset.v;render()});
 $("#user").onchange=e=>{S.user=+e.target.value;save();render()};
 $("#scrim").onclick=closeLead;
