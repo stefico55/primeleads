@@ -1875,15 +1875,16 @@ const pid=()=>"p"+Math.random().toString(36).slice(2,9);
 function addPeople(l,org,dirs){l.people=l.people||[];dirs.forEach(d=>{if(!d.n)return;if(l.people.some(p=>p.o===org&&same(p.n,d.n)))return;l.people.push({id:pid(),n:d.n,f:d.f||"",o:org,t:"",e:"",src:"RNE"})})}
 const cache=new Map();
 async function contacts(l,e){const nom=(e.ent&&e.ent.nom)||l.entreprise;if(!nom)return false;const key=(e.ent&&e.ent.siren)||nz(nom)+"|"+l.cp;
- let r=cache.get(key);if(!r){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
+ let r=cache.get(key);if(!r){await slot();try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
   const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,lat:l.lat,lng:l.lng,site:l.q.site||""}),signal:c.signal});clearTimeout(t);
-  if(!x.ok)return false;r=await x.json();if(!r||r.err)return false}catch(err){return false}cache.set(key,r)}
- e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],t:now()};
+  if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}cache.set(key,r)}
+ e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,t:now()};
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return true}
 const nz2=0;
 const busy=new Set();
-async function run(l){if(busy.has(l.id))return false;busy.add(l.id);try{
- if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2;return true}
+const MINSC=40;let gate=Promise.resolve();const slot=()=>{const x=gate.then(()=>new Promise(r=>setTimeout(r,1100)));gate=x;return x};
+async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
+ if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){if(force||(l.score||0)>=MINSC){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2}return true}
  const e={t:now(),v:1,ent:null,own:[],aut:[],voi:null};let net=false;
  const ent=await bySiret(l);if(ent!==undefined)net=true;
  if(ent===null||ent===undefined){const n=await byName(l.entreprise,l.cp);if(n===undefined&&ent===undefined)return false;net=true;if(n&&n.c)e.ent=n.c}else e.ent=ent;
@@ -1894,9 +1895,9 @@ async function run(l){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.voi=await voisins(l,skip)||null;
  if(e.ent){addPeople(l,l.entreprise||e.ent.nom,e.ent.dir);if(!l.dirigeant&&e.ent.dir[0])l.dirigeant=e.ent.dir[0].n;if(!l.naf&&e.ent.naf)l.naf=e.ent.naf}
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
- l.enr=e;const okc=await contacts(l,e);if(okc)e.v=2;return true}finally{busy.delete(l.id)}}
+ l.enr=e;if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}return true}finally{busy.delete(l.id)}}
 let auto_run=false;
-async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr||l.enr.v<2).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr||(l.enr.v<2&&(l.score||0)>=MINSC)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
  const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
  await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false}}
@@ -1917,8 +1918,8 @@ function tEnr(l){const e=l.enr,b=ENR.busy.has(l.id),A=s=>`https://annuaire-entre
   <div class="xs" style="margin-top:6px">${v.liste.map(x=>`<div>${x.sci?'<span class="tag a">SCI / foncière</span> ':""}<a href="${A(x.siren)}" target="_blank" rel="noopener">${esc(x.nom)}</a> · NAF ${esc(x.naf||"")}${x.eff?" · "+esc(x.eff)+" sal.":""}</div>`).join("")}${v.total>v.liste.length?`<div class="mut">${v.liste.length?"… et ":""}${v.total-v.liste.length} autre${v.total-v.liste.length>1?"s":""} société${v.total-v.liste.length>1?"s":""} au registre à cette adresse</div>`:""}</div></details>`:""}
  ${tCt(l,e)}</section>`}
 function tCt(l,e){const c=e.ct,hr=u=>/^https?:/.test(u)?u:"https://"+u,lk=(h,t)=>`<a href="${esc(h)}" target="_blank" rel="noopener">${esc(t)}</a>`;
- if(!c)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : recherche en attente (site de l'entreprise, mentions légales, OpenStreetMap).</p>`;
- const any=c.tel||c.email||c.site;if(!any)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : aucun site ni téléphone public trouvé pour cette société. Les champs restent à saisir à la main (Interlocuteur).</p>`;
+ if(!c)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : ${(l.score||0)>=40?"recherche en attente.":"non recherchées automatiquement (score inférieur à 40) : clique sur Actualiser pour les chercher."}</p>`;
+ const any=c.tel||c.email||c.site;if(!any)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : ${c.cle===false?"recherche web non activée (clé de recherche à brancher), seuls les sites devinés ont été testés.":"aucun site ni téléphone public trouvé pour cette société."} Les champs restent à saisir à la main (Interlocuteur).</p>`;
  const sc=c.social||{};
  return `<h4 class="sh" style="margin-top:10px">Coordonnées trouvées <span class="tag ${c.fiab==="verifie"?"g":""}">${c.fiab==="verifie"?"Vérifié (SIREN sur le site)":"À confirmer"}</span></h4>
  <div class="xs" style="line-height:1.7">${c.tels&&c.tels.length?"Tél. "+c.tels.map(t=>`<a href="tel:${esc(t.replace(/\s/g,""))}">${esc(t)}</a>`).join(" · "):c.tel?`Tél. <a href="tel:${esc(c.tel.replace(/\s/g,""))}">${esc(c.tel)}</a>`:""}
@@ -2057,7 +2058,7 @@ function bindDrawer(l){const D=$("#drawer");
  $$("#drawer [data-mkp]").forEach(b=>b.onclick=()=>mkPrincipal(l2,b.dataset.mkp));
  $$("#drawer [data-pd]").forEach(b=>b.onclick=()=>{const p=l2.people.find(x=>x.id===b.dataset.pd);ask("Supprimer ce contact ?",`<p>${esc(p.n)} sera retiré de la fiche.</p>`,()=>{l2.people=l2.people.filter(x=>x.id!==p.id);save();keepY();toast("Contact supprimé")})});
  $$("#drawer [data-oa]").forEach(b=>b.onclick=()=>askOrg(l2));
- $$("#drawer [data-enr]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Recherche en cours…";const ok=await ENR.run(l2);if(ok){save();toast("Fiche enrichie")}else toast("Registre injoignable, réessaie dans un instant");render()});
+ $$("#drawer [data-enr]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Recherche en cours…";const ok=await ENR.run(l2,true);if(ok){save();toast("Fiche enrichie")}else toast("Registre injoignable, réessaie dans un instant");render()});
  $$("#drawer [data-od]").forEach(b=>b.onclick=()=>{const [k,i]=b.dataset.od.split("|"),own=(l2.proprietaire||"").split(",").map(s=>s.trim()).filter(Boolean),n=k==="a"?l2.autres[+i]:own[+i];ask("Retirer cette entreprise ?",`<p>${esc(n)} sera retirée de la liste. Ses contacts restent dans la fiche, à rattacher.</p>`,()=>{if(k==="a")l2.autres.splice(+i,1);else{own.splice(+i,1);l2.proprietaire=own.join(", ")}save();keepY();toast("Entreprise retirée")})})}
  $$("#drawer [data-nav]").forEach(b=>b.onclick=()=>navLead(+b.dataset.nav));
  $$("#drawer [data-qa]").forEach(b=>b.onclick=()=>{const k=b.dataset.qa;if(k==="call"){if(l.q.tel){location.href="tel:"+l.q.tel.replace(/\s/g,"")}else{tab="ent";renderDrawer();toast("Renseignez le téléphone dans « Interlocuteur »")}}else if(k==="mail"){tab="mail";renderDrawer()}else askRappel(l)});
