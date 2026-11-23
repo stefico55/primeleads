@@ -2159,7 +2159,7 @@ async function contacts(l,e,guess){const nom=(e.ent&&e.ent.nom)||l.entreprise;if
  let r=cache.get(key);if(!r){await slot();try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
   const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,adresse:l.adresse||"",lat:l.lat,lng:l.lng,site:l.q.site||"",nosearch:!!guess}),signal:c.signal});clearTimeout(t);
   if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}if(r.cle!==false)cache.set(key,r)}
- const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,t:now()};
+ const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,r5:true,t:now()};
  if(pv&&guess&&!pv.g){["tel","email","tels","emails","fiab","src"].forEach(k=>{const v=e.ct[k];if(!v||(Array.isArray(v)&&!v.length)||v==="aucune")e.ct[k]=pv[k]});e.ct.cle=pv.cle;e.ct.g=false}
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 const nz2=0;
@@ -2180,10 +2180,25 @@ async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
  l.enr=e;fill(l);if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}else{await contacts(l,e,true);e.g=true}return true}finally{busy.delete(l.id)}}
 let auto_run=false,auto_again=false;
-async function auto(){if(auto_run){auto_again=true;return}auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}});if(ch){save();render()}const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)||((l.score||0)<MINSC&&l.enr.v<2&&!l.enr.g)||((l.score||0)>=MINSC&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r3)||(l.enr&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r4)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+async function auto(){if(auto_run){auto_again=true;return}auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}const c=l.enr&&l.enr.ct;if(c&&c.r4&&!c.r5&&c.siteFiab==="probable"){if(l.q&&l.q.site===c.site)delete l.q.site;c.site=null;c.siteFiab=null;c.r4=false;c.r5=true;ch++}});if(ch){save();render()}let todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)||((l.score||0)<MINSC&&l.enr.v<2&&!l.enr.g)||((l.score||0)>=MINSC&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r3)||(l.enr&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r4)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+ if(window.CL&&CL.on&&CL.sb){const r=await srvLot(todo);n+=r.n;todo=r.left;if(r.n){save();render()}}
  const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
  await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false;if(auto_again){auto_again=false;setTimeout(auto,800)}}}
+// Lot 3 : file côté serveur (/api/lot). Le serveur complète et enregistre chaque fiche ; on reporte ici le résultat.
+function srvApply(l,m){l.enr=m.enr;if(Array.isArray(m.people))l.people=m.people;if(m.dirigeant&&!l.dirigeant)l.dirigeant=m.dirigeant;if(m.naf&&!l.naf)l.naf=m.naf;
+ l.q=l.q||{};const mq=m.q||{};if(!l.q.contact&&mq.contact){l.q.contact=mq.contact;if(!l.q.fonction&&mq.fonction)l.q.fonction=mq.fonction;if(mq.contactSrc)l.q.contactSrc=mq.contactSrc}
+ ["tel","email","site"].forEach(k=>{if(!l.q[k]&&mq[k])l.q[k]=mq[k]})}
+async function srvLot(list){const left=new Map(list.map(l=>[String(l.id),l]));let n=0;
+ try{clearTimeout(CL.t);CL.t=null;await clSync();const ses=await CL.sb.auth.getSession(),tk=ses&&ses.data&&ses.data.session&&ses.data.session.access_token;if(!tk)return{n,left:list};
+  for(let i=0;i<list.length;i+=20){const part=list.slice(i,i+20);part.forEach(l=>busy.add(l.id));
+   try{const r=await fetch("/api/lot",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+tk},body:JSON.stringify({refs:part.map(l=>String(l.id))})});
+    if(!r.ok||!r.body)break;const rd=r.body.getReader(),dec=new TextDecoder();let buf="";
+    for(;;){const {value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let k;
+     while((k=buf.indexOf("\n"))>=0){const ln=buf.slice(0,k);buf=buf.slice(k+1);let o;try{o=JSON.parse(ln)}catch(e){continue}
+      if(o.ref){const l=left.get(o.ref);left.delete(o.ref);busy.delete(o.ref);if(l&&o.lead){srvApply(l,o.lead);n++;if(n%4===0){save();render()}}}}}}
+   finally{part.forEach(l=>busy.delete(l.id))}}}
+ catch(e){}return{n,left:[...left.values()]}}
 return{run,auto,busy,nz}})();
 const fmE=n=>n==null?"—":Math.abs(n)>=1e6?(n/1e6).toFixed(1).replace(".",",")+" M€":Math.round(n/1e3)+" k€";
 function tEnr(l){const e=l.enr,b=ENR.busy.has(l.id),A=s=>`https://annuaire-entreprises.data.gouv.fr/entreprise/${s}`,P=s=>`https://www.pappers.fr/entreprise/${s}`;
@@ -2207,7 +2222,7 @@ function tCt(l,e){const c=e.ct,hr=u=>/^https?:/.test(u)?u:"https://"+u,lk=(h,t)=
  return `<h4 class="sh" style="margin-top:10px">Coordonnées trouvées <span class="tag ${c.fiab==="verifie"?"g":""}">${c.fiab==="verifie"?"Vérifié (SIREN sur le site)":"À confirmer"}</span></h4>
  <div class="xs" style="line-height:1.7">${c.tels&&c.tels.length?"Tél. "+c.tels.map(t=>`<a href="tel:${esc(t.replace(/\s/g,""))}">${esc(t)}</a>`).join(" · "):c.tel?`Tél. <a href="tel:${esc(c.tel.replace(/\s/g,""))}">${esc(c.tel)}</a>`:""}
  ${c.emails&&c.emails.length?"<br>E-mail "+c.emails.map(m=>lk("mailto:"+m,m)).join(" · "):c.email?"<br>E-mail "+lk("mailto:"+c.email,c.email):""}
- ${c.site?"<br>Site "+lk(hr(c.site),c.site.replace(/^https?:\/\//,""))+(c.siteFiab==="probable"?' <span class="tag">Probable</span>':""):""}${sc.linkedin?" · "+lk(sc.linkedin,"LinkedIn"):""}${sc.facebook?" · "+lk(sc.facebook,"Facebook"):""}
+ ${c.site?"<br>Site "+lk(hr(c.site),c.site.replace(/^https?:\/\//,""))+(c.siteFiab==="probable"?' <span class="tag">Probable</span>':c.siteFiab==="verifie"?' <span class="tag g">Vérifié</span>':""):""}${sc.linkedin?" · "+lk(sc.linkedin,"LinkedIn"):""}${sc.facebook?" · "+lk(sc.facebook,"Facebook"):""}
  <br><span class="mut">Sources : ${esc((c.src||[]).join(", ")||"web")}. Les champs vides de l'interlocuteur ont été préremplis.</span></div>`}
 function mails(l){const u=me(),c=l.q.contact?l.q.contact.trim():"",civ=c?`Bonjour ${c},`:"Bonjour,",ind=secteur(l)==="Industrie",fr=froidP(l);
  const sig=`${u.nom}\nChargé d'affaires CEE, PACLIM\n${u.tel||"04 84 89 43 00"} · ${u.email||"bureau.etude@paclim.fr"}\npaclim.fr`;

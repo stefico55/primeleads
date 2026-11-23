@@ -10,11 +10,11 @@ const toks=n=>{const w=[];nz(n).replace(FORMES," ").split(" ").forEach(x=>{if(x.
 const GEN=/^(transports?|trans|logistique|ets|etablissement|groupe|garage|menuiserie|boulangerie|entreprise|atelier|cabinet|agence)$/;
 // Domaines devinés pour chaque nom : collé, avec tirets, sans le mot générique de tête, deux premiers mots.
 function slugsN(nom){const out=new Map();
- names(nom).forEach(n=>{const w=toks(n).filter(x=>!/^(et|de|du|des|la|le|les|cie|freres|soeurs|fils)$/.test(x)||toks(n).length<2);if(!w.length)return;const put=(s,tl)=>{if(s.length>=3)tl.forEach(t=>{if(!out.has(s+"."+t))out.set(s+"."+t,n)})};
+ names(nom).forEach(n=>{const w=toks(n).filter(x=>!/^(et|de|du|des|la|le|les|cie|freres|soeurs|fils)$/.test(x)||toks(n).length<2);if(!w.length)return;const put=(s,tl,wk)=>{if(s.length>=3)tl.forEach(t=>{if(!out.has(s+"."+t))out.set(s+"."+t,{n,weak:!!wk||s.replace(/-/g,"").length<5})})};
   put(w.join(""),["fr","com"]);put(w.join("-"),["fr","com"]);
-  if(w.length>1&&GEN.test(w[0])){const r=w.slice(1);put(r.join(""),["fr","com"]);put(r.join("-"),["fr"])}
+  if(w.length>1&&GEN.test(w[0])){const r=w.slice(1);put(r.join(""),["fr","com"],true);put(r.join("-"),["fr"],true)}
   if(w.length>2){put(w.slice(0,2).join(""),["fr"]);put(w.slice(0,2).join("-"),["fr"])}});
- return [...out.entries()].slice(0,16).map(([d,n])=>({d,n}))}
+ return [...out.entries()].slice(0,16).map(([d,v])=>({d,n:v.n,weak:v.weak}))}
 function slugs(nom){return slugsN(nom).map(x=>x.d)}
 function clean(html){return String(html||"").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<!--[\s\S]*?-->/g," ")}
 function text(html){return clean(html).replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ")}
