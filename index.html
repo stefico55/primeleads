@@ -2053,7 +2053,21 @@ const RSECT=[
  {k:"ens",t:"Enseignement",naf:["85.31Z","85.32Z","85.42Z"],sect:"Tertiaire",sc:40}];
 const REFF=[["","Toutes tailles",[]],["10","10 salariés et plus",["11","12","21","22","31","32","41","42","51","52","53"]],["50","50 salariés et plus",["21","22","31","32","41","42","51","52","53"]],["250","250 salariés et plus",["32","41","42","51","52","53"]]];
 const RMAX=200;let RS={sect:"logi",zone:"69",eff:"10",max:RMAX,step:"form",n:null,err:"",done:0,added:0,skip:0,opp:true,nopp:0};
-function rZone(s){const t=String(s||"").split(/[\s,;]+/).filter(Boolean),dep=[],cp=[];t.forEach(x=>{if(/^\d{5}$/.test(x))cp.push(x);else if(/^(\d{2,3}|2[AB])$/i.test(x))dep.push(x.toUpperCase())});return{dep,cp}}
+const DEPS={"01":"Ain","02":"Aisne","03":"Allier","04":"Alpes-de-Haute-Provence","05":"Hautes-Alpes","06":"Alpes-Maritimes","07":"Ardèche","08":"Ardennes","09":"Ariège","10":"Aube","11":"Aude","12":"Aveyron","13":"Bouches-du-Rhône","14":"Calvados","15":"Cantal","16":"Charente","17":"Charente-Maritime","18":"Cher","19":"Corrèze","2A":"Corse-du-Sud","2B":"Haute-Corse","21":"Côte-d'Or","22":"Côtes-d'Armor","23":"Creuse","24":"Dordogne","25":"Doubs","26":"Drôme","27":"Eure","28":"Eure-et-Loir","29":"Finistère","30":"Gard","31":"Haute-Garonne","32":"Gers","33":"Gironde","34":"Hérault","35":"Ille-et-Vilaine","36":"Indre","37":"Indre-et-Loire","38":"Isère","39":"Jura","40":"Landes","41":"Loir-et-Cher","42":"Loire","43":"Haute-Loire","44":"Loire-Atlantique","45":"Loiret","46":"Lot","47":"Lot-et-Garonne","48":"Lozère","49":"Maine-et-Loire","50":"Manche","51":"Marne","52":"Haute-Marne","53":"Mayenne","54":"Meurthe-et-Moselle","55":"Meuse","56":"Morbihan","57":"Moselle","58":"Nièvre","59":"Nord","60":"Oise","61":"Orne","62":"Pas-de-Calais","63":"Puy-de-Dôme","64":"Pyrénées-Atlantiques","65":"Hautes-Pyrénées","66":"Pyrénées-Orientales","67":"Bas-Rhin","68":"Haut-Rhin","69":"Rhône","70":"Haute-Saône","71":"Saône-et-Loire","72":"Sarthe","73":"Savoie","74":"Haute-Savoie","75":"Paris","76":"Seine-Maritime","77":"Seine-et-Marne","78":"Yvelines","79":"Deux-Sèvres","80":"Somme","81":"Tarn","82":"Tarn-et-Garonne","83":"Var","84":"Vaucluse","85":"Vendée","86":"Vienne","87":"Haute-Vienne","88":"Vosges","89":"Yonne","90":"Territoire de Belfort","91":"Essonne","92":"Hauts-de-Seine","93":"Seine-Saint-Denis","94":"Val-de-Marne","95":"Val-d'Oise","971":"Guadeloupe","972":"Martinique","973":"Guyane","974":"La Réunion","976":"Mayotte"};
+const znorm=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/['’\-]/g," ").replace(/\bst\b/g,"saint").replace(/\bste\b/g,"sainte").replace(/\s+/g," ").trim();
+const DEPN=Object.fromEntries(Object.entries(DEPS).map(([k,v])=>[znorm(v),k]));DEPN["corse"]="2A";DEPN["rhone alpes"]=null;
+// Zone libre : numéros de département, codes postaux, noms de départements ou de villes, séparés par des virgules.
+async function rResolve(txt){const dep=[],cp=[],lab=[],bad=[];
+ const parts=String(txt||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+ for(const part of parts){
+  if(/^[\d\sAB]+$/i.test(part)){part.split(/\s+/).filter(Boolean).forEach(x=>{if(/^\d{5}$/.test(x)){cp.push(x);lab.push(x)}else if(/^(\d{2,3}|2[AB])$/i.test(x)){const d=x.toUpperCase().padStart(2,"0");dep.push(d);lab.push((DEPS[d]||"Département")+" ("+d+")")}else bad.push(x)});continue}
+  const n=znorm(part).replace(/^(departement|dept|dep)( de| du| des)? /,"");
+  if(DEPN[n]){dep.push(DEPN[n]);if(n==="corse")dep.push("2B");lab.push(DEPS[DEPN[n]]+" ("+DEPN[n]+")");continue}
+  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);const r=await fetch("https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(part)+"&fields=nom,codesPostaux,codeDepartement&boost=population&limit=8",{signal:c.signal});clearTimeout(t);
+   const j=r.ok?await r.json():[];const m=j.find(x=>znorm(x.nom)===n)||null;
+   if(m&&m.codesPostaux&&m.codesPostaux.length){m.codesPostaux.forEach(x=>cp.push(x));lab.push(m.nom+" ("+m.codeDepartement+")")}else bad.push(part)}catch(e){bad.push(part)}}
+ return{dep:[...new Set(dep)],cp:[...new Set(cp)],lab,bad}}
+function rZone(){return RS.z||{dep:[],cp:[]}}
 function rParams(page){const s=RSECT.find(x=>x.k===RS.sect),z=rZone(RS.zone),e=REFF.find(x=>x[0]===RS.eff),p={etat_administratif:"A",per_page:25,page,limite_matching_etablissements:10};
  if(s.section)p.section_activite_principale=s.section;else p.activite_principale=s.naf.join(",");
  if(z.cp.length)p.code_postal=z.cp.join(",");else p.departement=z.dep.join(",");
@@ -2068,8 +2082,10 @@ function rLead(r,e,s){const d=(r.dirigeants||[]).find(x=>x.type_dirigeant==="per
  return{id:String(e.siret),adresse:e.adresse?String(e.adresse).replace(/\s+\d{5}\s+.*$/,""):"",cp:e.code_postal||"",ville:e.libelle_commune||"",entreprise:r.nom_complet||r.nom_raison_sociale||"",autres:e.nom_commercial&&e.nom_commercial!==r.nom_complet?[e.nom_commercial]:[],naf:e.activite_principale||r.activite_principale||"",siret:String(e.siret),
   dirigeant:dn?`${dn.toUpperCase()}${d.qualite?" ("+d.qualite+")":""}`:"",proprietaire:"",surface:0,hauteur:0,fiab_h:"",secteur:s.sect,froid:!!s.froid,chauffage:"",dpe:"",conso:0,score:Math.min(90,s.sc+big),scoreProv:true,scS:s.sc,
   lat:e.latitude?+e.latitude:null,lng:e.longitude?+e.longitude:null,oppo:!!r.opposition_diffusion_commerciale,statut:"new",q:{},journal:[],src:{k:"recherche",t:s.t,zone:RS.zone,d:now()}}}
-async function rPreview(){RS.err="";const z=rZone(RS.zone);if(!z.dep.length&&!z.cp.length){RS.err="Indique un département (ex. 69) ou des codes postaux (ex. 69960, 69800).";return render()}
- RS.step="busy";render();try{const j=await rGet(rParams(1));RS.n=j.total_results||0;RS.step="preview"}catch(e){RS.err=e.message||"Registre injoignable";RS.step="form"}render()}
+async function rPreview(){RS.err="";RS.step="busy";render();const z=await rResolve(RS.zone);RS.z=z;
+ if(z.bad.length||(!z.dep.length&&!z.cp.length)){RS.step="form";RS.err=(z.bad.length?"Zone non reconnue : "+z.bad.join(", ")+". ":"")+"Indiquez un département (Isère ou 38), une ville (Grenoble) ou des codes postaux, séparés par des virgules.";return render()}
+ if(z.dep.length&&z.cp.length){RS.step="form";RS.err="Choisissez soit des départements, soit des villes ou codes postaux, pas les deux dans la même recherche.";return render()}
+ try{const j=await rGet(rParams(1));RS.n=j.total_results||0;RS.step="preview"}catch(e){RS.err=e.message||"Registre injoignable";RS.step="form"}render()}
 async function rRun(){RS.step="run";RS.done=0;RS.added=0;RS.skip=0;RS.nopp=0;RS.err="";RS.cand=[];render();const s=RSECT.find(x=>x.k===RS.sect),known=rKnown(),z=rZone(RS.zone),add=[];
  const inZone=e=>{const cp=String(e.code_postal||"");return z.cp.length?z.cp.includes(cp):z.dep.some(d=>d.length===3?cp.startsWith(d):d==="2A"||d==="2B"?cp.startsWith("20"):cp.startsWith(d))};
  try{for(let page=1;add.length<RS.max&&page<=40;page++){const j=await rGet(rParams(page));const res=j.results||[];if(!res.length)break;
@@ -2094,7 +2110,7 @@ function vVerif(){const c=RS.cand,sel=c.filter(l=>l._ok),q=sel.reduce((t,l)=>t+(
  <div style="display:flex;gap:8px"><button class="btn p" data-r="add" ${sel.length?"":"disabled"}>Ajouter ${sel.length} prospect${sel.length>1?"s":""}</button><button class="btn" data-r="new">Annuler</button></div>`}
 function vRech(){const s=RSECT.find(x=>x.k===RS.sect),busy=RS.step==="busy"||RS.step==="run"||RS.step==="bdnb"||RS.step==="verify",dis=RS.step!=="form"&&RS.step!=="done"?"disabled":"";
  const form=`<div class="f"><label for="rS">Secteur</label><select id="rS" ${dis}>${RSECT.map(x=>`<option value="${x.k}" ${x.k===RS.sect?"selected":""}>${esc(x.t)}</option>`).join("")}</select></div>
- <div class="f"><label for="rZ">Zone : département(s) ou code(s) postal(aux)</label><input id="rZ" value="${esc(RS.zone)}" placeholder="69 ou 69960, 69800" ${dis}></div>
+ <div class="f"><label for="rZ">Zone : départements, villes ou codes postaux, séparés par des virgules</label><input id="rZ" value="${esc(RS.zone)}" placeholder="Isère, ou 38, ou Grenoble, Voiron, ou 69960" ${dis}></div>
  <div style="display:flex;gap:12px;flex-wrap:wrap"><div class="f" style="flex:1;min-width:180px"><label for="rE">Taille</label><select id="rE" ${dis}>${REFF.map(x=>`<option value="${x[0]}" ${x[0]===RS.eff?"selected":""}>${x[1]}</option>`).join("")}</select></div>
  <div class="f" style="width:160px"><label for="rM">Prospects max.</label><input id="rM" type="number" min="1" max="${RMAX}" value="${RS.max}" ${dis}></div></div>
  <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0 14px;font-size:14px"><input type="checkbox" id="rO" ${RS.opp?"checked":""} ${dis} style="margin-top:3px"><span>Exclure les sociétés qui ont refusé l'usage de leurs données pour la prospection (registre INSEE, recommandé)</span></label>`;
@@ -2102,7 +2118,7 @@ function vRech(){const s=RSECT.find(x=>x.k===RS.sect),busy=RS.step==="busy"||RS.
  let act="";
  if(RS.step==="form")act=`<button class="btn p" data-r="prev">Voir combien de sociétés</button>`;
  else if(RS.step==="busy")act=`<p>Interrogation du registre officiel…</p>`;
- else if(RS.step==="preview"){const n=Math.min(RS.n,RS.max);act=`<p><b>${nf(RS.n)}</b> société${RS.n>1?"s":""} au registre pour « ${esc(s.t)} » sur cette zone.${RS.n?` Ajout de <b>${nf(n)}</b> au plus, sans les prospects déjà présents ou retirés.`:""}</p>
+ else if(RS.step==="preview"){const n=Math.min(RS.n,RS.max);act=`<p><b>${nf(RS.n)}</b> société${RS.n>1?"s":""} au registre pour « ${esc(s.t)} » : ${esc((RS.z&&RS.z.lab||[]).join(", "))}.${RS.n?` Ajout de <b>${nf(n)}</b> au plus, sans les prospects déjà présents ou retirés.`:""}</p>
   ${RS.n?`<p style="font-size:13px;opacity:.75">Registre et bâtiments (BDNB) sont gratuits. Vous vérifiez ensuite la liste avant tout ajout ; la recherche web des coordonnées ne porte que sur les prospects validés.</p>`:""}
   <div style="display:flex;gap:8px">${RS.n?`<button class="btn p" data-r="run">Lancer la recherche</button>`:""}<button class="btn" data-r="back">Modifier</button></div>`}
  else if(RS.step==="run")act=`<p>Lecture du registre… <b>${RS.done}</b> établissements trouvés${RS.skip?`, ${RS.skip} déjà connus`:""}.</p>`;
@@ -2111,7 +2127,7 @@ function vRech(){const s=RSECT.find(x=>x.k===RS.sect),busy=RS.step==="busy"||RS.
  else act=`<p><b>${RS.added}</b> prospect${RS.added>1?"s":""} ajouté${RS.added>1?"s":""}${RS.skip?` (${RS.skip} déjà connus, ignorés)`:""}${RS.nopp?`, ${RS.nopp} société${RS.nopp>1?"s":""} écartée${RS.nopp>1?"s":""} car opposée${RS.nopp>1?"s":""} à la prospection`:""}. Site, téléphone et e-mail arrivent au fil de l'enrichissement, tant que l'appli reste ouverte.</p><div style="display:flex;gap:8px"><button class="btn p" data-r="see">Voir les bâtiments</button><button class="btn" data-r="new">Nouvelle recherche</button></div>`;
  return `<section class="card" style="max-width:min(${RS.step==="verify"?980:720}px,100%);box-sizing:border-box;margin:16px auto;padding:20px"><h2 style="margin-top:0">Nouvelle recherche</h2><p style="margin-top:0;opacity:.75">Trouve les sociétés d'un secteur sur une zone au registre officiel, puis complète chaque fiche automatiquement. Chaque fiche reçoit ensuite la surface, la hauteur et le DPE du bâtiment (BDNB), qui donnent le score CEE.</p>${form}${err}${act}</section>`}
 function bindRech(){const g=id=>document.getElementById(id);if(!g("rS"))return;g("rS").onchange=e=>{RS.sect=e.target.value;RS.step="form";render()};g("rE").onchange=e=>{RS.eff=e.target.value;RS.step="form";render()};
- g("rZ").oninput=e=>{RS.zone=e.target.value};g("rO").onchange=e=>{RS.opp=e.target.checked};g("rM").oninput=e=>{RS.max=Math.max(1,Math.min(RMAX,+e.target.value||RMAX))};
+ g("rZ").oninput=e=>{RS.zone=e.target.value};g("rZ").onkeydown=e=>{if(e.key==="Enter"&&RS.step==="form"){RS.zone=e.target.value;rPreview()}};g("rO").onchange=e=>{RS.opp=e.target.checked};g("rM").oninput=e=>{RS.max=Math.max(1,Math.min(RMAX,+e.target.value||RMAX))};
  $$("#app [data-r]").forEach(b=>b.onclick=()=>{const a=b.dataset.r;if(a==="prev")rPreview();else if(a==="run")rRun();else if(a==="back"||a==="new"){RS.step="form";RS.err="";RS.cand=[];render()}else if(a==="see"){V="pros";render()}else if(a==="add")rAdd();else if(a==="all"||a==="none"||a==="top"){RS.cand.forEach(l=>{l._ok=a==="all"||(a==="top"&&(l.score||0)>=40&&l.bd&&l.bd.m!=="aucun")});render()}});
  $$("#app [data-ck]").forEach(c=>c.onchange=()=>{const l=RS.cand[+c.dataset.ck];if(l){l._ok=c.checked;render()}})}
 /* ---- lot 2 : bâtiment BDNB (surface, hauteur, DPE) et score CEE ---- */
