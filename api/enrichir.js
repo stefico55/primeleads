@@ -24,8 +24,8 @@ module.exports=async(req,rsp)=>{
  const snippets=[];let rl=null,sErr=null,snipAll="";
  const handle=r=>{if(r.retry){sErr="retry";return}if(r.err){sErr="err"+r.err;return}rl=r.rl||rl;r.res.forEach(x=>{snipAll+=" "+x.url+" "+x.title+" "+x.txt;const tx=L.nz(x.title+" "+x.txt),rel=nt.length&&nt.every(t=>tx.includes(t)),loc=tx.includes(q.cp)||(vil&&tx.includes(vil))||(q.siren&&(x.title+x.txt).replace(/\D/g,"").includes(q.siren));
    if(rel&&loc)snippets.push({host:host(x.url),txt:x.title+" \n "+x.txt});add(x.url,L.hostOk(x.url)?"result":"dir")})};
- if(key){handle(await brave(`${nom} ${q.ville} contact`,key));if(sErr==="retry")return rsp.status(200).json({retry:true})}
  L.slugs(nom).forEach(d=>add("https://"+d,"guess"));
+ if(key){handle(await brave(`${nom} ${q.ville} contact`,key));if(sErr==="retry")return rsp.status(200).json({retry:true})}
  const readPages=async list=>(await Promise.all(list.map(async c=>{const home=await get(c.url,4500);if(home.status!==200)return null;let all=home.body;
    if(c.kind!=="dir"&&L.hostOk(home.url)){const lk=L.links(home.body,home.url).filter(u=>host(u)===host(home.url)).slice(0,3);const more=await Promise.all(lk.map(u=>get(u,3500)));all+="\n"+more.filter(x=>x.status===200).map(x=>x.body).join("\n")}
    const ident=L.hasId(all,q.siren,q.siret),h=host(home.url).split(".")[0],loc=L.titleMatch(all,nom,q.cp,q.ville),slug=nt.length&&(h===nt.join("")||h===nt.join("-")||h.replace(/-/g,"")===nt.join("")),hostTok=nt.some(x=>x.length>3&&h.includes(x)),nameIn=nt.length&&nt.every(x=>L.nz(L.text(home.body).slice(0,40000)).includes(x));
