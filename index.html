@@ -1828,7 +1828,7 @@ function tEnt(l){const site=l.q.site||"";const g=`https://www.google.com/search?
  const left=`<section class="card pad ctc"><div class="chd"><h3>Interlocuteur</h3><div class="acts"><button class="btn s p" data-qa="call">${ICO.tel}${l.q.tel?esc(l.q.tel):"Appeler"}</button><button class="btn s" data-qa="mail">${ICO.mail}E-mail</button><button class="btn s" data-qa="rappel">${ICO.hist}Rappel</button></div></div>
  <div class="g2">${fld(l,"contact","Nom et prénom")}${fld(l,"fonction","Fonction")}</div><div class="g2">${fld(l,"tel","Téléphone direct ou standard","tel")}${fld(l,"email","E-mail professionnel","email")}</div>
  <div class="g2">${sel2(l,"statutOcc","Propriétaire ou locataire",[["","—"],["proprio","Propriétaire occupant"],["locataire","Locataire"]])}${sel2(l,"enedis","Accord données Enedis",[["","—"],["oui","Oui, mandat à envoyer"],["non","Non"]])}</div>
- <p class="xs mut" style="margin:0">Dirigeant inscrit au RNE : ${esc(l.dirigeant||"—")} · aucun téléphone dans les données ouvertes (Kaspr ou saisie).</p></section>
+ <p class="xs mut" style="margin:0">${l.q.contactSrc==="RNE"?`Nom et fonction préremplis depuis le registre officiel (dirigeant) : à confirmer à l'appel.`:`Dirigeant inscrit au RNE : ${esc(l.dirigeant||"—")}.`}${l.q.tel?"":" Téléphone : voir « Fiche enrichie » ou saisie."}</p></section>
  <section class="card pad"><div class="chd"><h3>Bâtiment</h3><span class="xs mut">recalcul en direct</span></div>
  <h4 class="sh">Local</h4><div class="g3b">${sel2(l,"activite","Activité du local",ACT)}${sel2(l,"secteur","Secteur CEE",[["","Auto ("+l.secteur+")"],["Tertiaire","Tertiaire (BAT)"],["Industrie","Industrie (IND)"]])}${fld(l,"hsp","Hauteur sous plafond (m)","number",String(l.hauteur))}${fld(l,"surfChauffee","Surface chauffée (m²)","number",String(l.surface))}</div>
  <h4 class="sh">Chauffage</h4><div class="g3b">${sel2(l,"chauffage","Type de chauffage",[["","—"],["convectif","Convectif (aérothermes, CTA)"],["radiatif","Radiatif (tubes, panneaux)"],["aucun","Non chauffé"]])}${fld(l,"pch","Puissance chauffage (kW)","number")}</div>
@@ -1881,10 +1881,11 @@ async function contacts(l,e){const nom=(e.ent&&e.ent.nom)||l.entreprise;if(!nom)
  e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,t:now()};
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 const nz2=0;
+function fill(l){const E=l.enr&&l.enr.ent;if(!E||!E.dir||!E.dir[0])return;l.q=l.q||{};if(!l.q.contact){l.q.contact=E.dir[0].n;if(!l.q.fonction&&E.dir[0].f)l.q.fonction=E.dir[0].f;l.q.contactSrc="RNE"}}
 const busy=new Set();
 const MINSC=40;let gate=Promise.resolve();const slot=()=>{const x=gate.then(()=>new Promise(r=>setTimeout(r,1100)));gate=x;return x};
 async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
- if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){if(force||(l.score||0)>=MINSC){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2}return true}
+ if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){fill(l);if(force||(l.score||0)>=MINSC){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2}return true}
  const e={t:now(),v:1,ent:null,own:[],aut:[],voi:null};let net=false;
  const ent=await bySiret(l);if(ent!==undefined)net=true;
  if(ent===null||ent===undefined){const n=await byName(l.entreprise,l.cp);if(n===undefined&&ent===undefined)return false;net=true;if(n&&n.c)e.ent=n.c}else e.ent=ent;
@@ -1895,9 +1896,9 @@ async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.voi=await voisins(l,skip)||null;
  if(e.ent){addPeople(l,l.entreprise||e.ent.nom,e.ent.dir);if(!l.dirigeant&&e.ent.dir[0])l.dirigeant=e.ent.dir[0].n;if(!l.naf&&e.ent.naf)l.naf=e.ent.naf}
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
- l.enr=e;if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}return true}finally{busy.delete(l.id)}}
+ l.enr=e;fill(l);if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}return true}finally{busy.delete(l.id)}}
 let auto_run=false;
-async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+async function auto(){if(auto_run)return;auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}});if(ch){save();render()}const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
  const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
  await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false}}
@@ -2053,7 +2054,7 @@ function askRappel(l){const d=new Date(Date.now()+864e5);d.setHours(10,0,0,0);as
 function bindDrawer(l){const D=$("#drawer");
  D.querySelector(".x").onclick=closeLead;$$("#drawer [data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderDrawer()});
  D.querySelector("[data-st]").onchange=e=>{if(e.target.value==="rappel"){askRappel(l);return}setStatus(l,e.target.value);render()};
- $$("#drawer [data-q]").forEach(el=>el.onchange=()=>{const k=el.dataset.q;let v=el.value.trim();if(el.type==="number")v=v===""?"":Math.max(0,Number(v));if(k==="tel"&&v&&!/^[+\d][\d\s.]{7,}$/.test(v)){toast("Numéro invalide");return}l.q[k]=v;save();const y=$(".db").scrollTop;render();$(".db").scrollTop=y;const n=$("#q-"+k);n&&n.focus({preventScroll:true})});
+ $$("#drawer [data-q]").forEach(el=>el.onchange=()=>{const k=el.dataset.q;let v=el.value.trim();if(el.type==="number")v=v===""?"":Math.max(0,Number(v));if(k==="tel"&&v&&!/^[+\d][\d\s.]{7,}$/.test(v)){toast("Numéro invalide");return}l.q[k]=v;if(k==="contact")delete l.q.contactSrc;save();const y=$(".db").scrollTop;render();$(".db").scrollTop=y;const n=$("#q-"+k);n&&n.focus({preventScroll:true})});
  {const l2=l;$$("#drawer [data-pa]").forEach(b=>b.onclick=()=>askPerson(l2));$$("#drawer [data-pe]").forEach(b=>b.onclick=()=>askPerson(l2,b.dataset.pe));
  $$("#drawer [data-mkp]").forEach(b=>b.onclick=()=>mkPrincipal(l2,b.dataset.mkp));
  $$("#drawer [data-pd]").forEach(b=>b.onclick=()=>{const p=l2.people.find(x=>x.id===b.dataset.pd);ask("Supprimer ce contact ?",`<p>${esc(p.n)} sera retiré de la fiche.</p>`,()=>{l2.people=l2.people.filter(x=>x.id!==p.id);save();keepY();toast("Contact supprimé")})});
