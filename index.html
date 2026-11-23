@@ -1562,6 +1562,36 @@ div.n7-ph.nofoto{border-radius:2.5mm}
 .n7-fx{font-size:7.3pt;color:#4d5d70;margin:2.6mm 0 0;line-height:1.45}
 .page.nt.n7 .nt-cta{margin-top:5mm;padding:4mm 5mm}.page.nt.n7 .nt-fn{margin-top:3.5mm;padding:3mm 4.5mm;font-size:7.2pt;line-height:1.45}
 
+/* ===== NOTE v8 : 3 pages, bandeau client + score, bleu adouci ===== */
+.page.nt.n7 .nt-h{background:#1f4f7c}
+.page.nt.n7 .pg-body{flex:1;padding:8mm 14mm 4mm}
+.n7-p1{display:flex;flex-direction:column;gap:6mm}
+.n7-cl{display:grid;grid-template-columns:1.8fr 1fr 1fr 31mm;gap:5mm;align-items:center;background:#f1f6fc;border:.3mm solid #e1eaf4;border-radius:2.5mm;padding:4mm 4mm 4mm 6mm}
+.n7-ci small{display:block;font-size:7pt;text-transform:uppercase;letter-spacing:.09em;font-weight:700;color:#3d7f1a}
+.n7-ci b{display:block;font-size:16pt;color:#1f4f7c;line-height:1.15;margin-top:1mm;letter-spacing:-.01em}.n7-ci i{display:block;font-style:normal;font-size:8.3pt;color:#4d5d70;margin-top:.8mm}
+.n7-cc,.n7-ct{border-left:.3mm solid #d6e1ec;padding-left:5mm;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+.n7-cl .n7-ad{margin:0;font-size:9pt;line-height:1.4}.n7-cl .n7-sr{margin-top:1.5mm}
+.n7-cl .n7-ct{margin:0;border-top:0;padding-top:0}
+.n7-cl .n7-sc{aspect-ratio:1;padding:3mm;border-radius:2mm;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-shadow:none}
+.n7-cl .n7-sc small{font-size:6pt;letter-spacing:.08em;line-height:1.25}
+.n7-cl .n7-sv{margin:1mm 0 .5mm;justify-content:center}.n7-cl .n7-sv b{font-size:26pt}.n7-cl .n7-sv span{font-size:9pt}
+.n7-cl .n7-sc em{font-size:7.5pt;margin-top:0;line-height:1.2}
+.n7-p1 .n7-ph{aspect-ratio:16/9}
+.n7-p1 .n7-sf{background:#2b5c8a}.n7-sf small,.n7-sf span{color:#e3ecf5}
+.n7-ks{margin-top:auto}
+.n7-k{background:#2b5c8a;border-top-color:#6cc644;padding:5mm 5mm 5.2mm}
+.n7-ki{color:#fff;font-size:7.5pt;font-weight:700}.n7-ki .ni{color:#fff}
+.n7-k>b{color:#fff;font-size:13.5pt;white-space:nowrap;letter-spacing:-.02em}.n7-k>span{color:#fff;font-size:8pt}.n7-k>span b{color:#fff;text-decoration:underline;text-decoration-color:#8ee05e;text-decoration-thickness:.5mm;text-underline-offset:.8mm}
+.page.nt .n7-h{color:#1f4f7c!important;margin:9mm 0 4.5mm!important}
+.n7-ts{gap:3.5mm}.n7-t{padding:3.5mm 3mm}
+.n7-ops{gap:5mm}.n7-op p{margin:3.5mm 5mm 0;font-size:9pt;line-height:1.55}.n7-op ul{margin:3mm 5mm 4.5mm;gap:2mm 6mm;font-size:8.5pt}.n7-oh{padding:4mm 5mm}
+.n7-oh b,.n7-st b,.n7-df h3,.n7-t b,.n7-op li b{color:#1f4f7c}
+.n7-df{grid-template-columns:1fr;gap:9mm}
+.n7-st{gap:4.5mm}.n7-st em{background:#2b5c8a;width:7mm;height:7mm;font-size:9pt}.n7-st b{font-size:9.8pt}.n7-st span{font-size:8.6pt;line-height:1.5}
+.n7-fin{font-size:9.5pt}.n7-fin td{padding:2.8mm 0}.n7-fin td:last-child{color:#1f4f7c}.n7-fin tr.t td{background:#2b5c8a}.n7-fin tr.t td:last-child{color:#fff}
+.n7-fx{font-size:8pt}
+.page.nt.n7 .nt-cta{margin-top:9mm}.page.nt.n7 .nt-fn{margin-top:6mm}
+
 /* ===== colonne : logo plein cadre sur blanc, menu bleu ciel ===== */
 @media(min-width:901px){
  .top{border-right:1px solid var(--line)}
@@ -2091,19 +2121,19 @@ function eco(l){const r=calc(l),es=estim(l),sx=S.settings,d=dim(l),q=l.q,ok=r.fi
 function aerial(l,surf){if(l.lat==null||l.lng==null)return`<div class="n7-ph nofoto"><span>Vue aérienne disponible dès que le bâtiment est géolocalisé</span></div>`;
  const[cx,cy]=l93c(l.lat,l.lng),rings=Array.isArray(l.geom)?l.geom:[],pts=rings.flat();
  let x0=cx-60,x1=cx+60,y0=cy-40,y1=cy+40;if(pts.length){x0=Math.min(...pts.map(p=>p[0]));x1=Math.max(...pts.map(p=>p[0]));y0=Math.min(...pts.map(p=>p[1]));y1=Math.max(...pts.map(p=>p[1]))}
- const mx=(x0+x1)/2,my=(y0+y1)/2,w=Math.max(160,(x1-x0)*1.45,(y1-y0)*1.45*1.5),h=w/1.5,bx=[mx-w/2,my-h/2,mx+w/2,my+h/2].map(v=>Math.round(v));
- const W=1200,H=800,X=x=>((x-bx[0])/(bx[2]-bx[0])*W).toFixed(1),Y=y=>((bx[3]-y)/(bx[3]-bx[1])*H).toFixed(1);
+ const mx=(x0+x1)/2,my=(y0+y1)/2,w=Math.max(190,(x1-x0)*1.4,(y1-y0)*1.4*16/9),h=w*9/16,bx=[mx-w/2,my-h/2,mx+w/2,my+h/2].map(v=>Math.round(v));
+ const W=1280,H=720,X=x=>((x-bx[0])/(bx[2]-bx[0])*W).toFixed(1),Y=y=>((bx[3]-y)/(bx[3]-bx[1])*H).toFixed(1);
  const src=`https://data.geopf.fr/wms-r/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ORTHOIMAGERY.ORTHOPHOTOS&STYLES=&CRS=EPSG:2154&BBOX=${bx.join(",")}&WIDTH=${W}&HEIGHT=${H}&FORMAT=image/jpeg`;
  const sb=[20,50,100,200].find(m=>m/w*W>=110)||200,sbw=sb/w*W;
  const shape=rings.length?rings.map(r=>`<polygon points="${r.map(p=>X(p[0])+","+Y(p[1])).join(" ")}"/>`).join(""):`<circle class="n7-pt" cx="${X(cx)}" cy="${Y(cy)}" r="16"/>`;
  return`<figure class="n7-ph"><img src="${src}" alt="Vue aérienne IGN du bâtiment" onerror="this.parentNode.classList.add('nofoto')"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><g class="n7-geo">${shape}</g><g class="n7-sb" transform="translate(40 ${H-46})"><rect width="${sbw.toFixed(1)}" height="8"/><text y="-12">${sb} m</text></g></svg><span class="n7-nf">Vue aérienne IGN indisponible dans cet aperçu</span><figcaption>Orthophotographie © IGN · Géoplateforme</figcaption></figure>
- <div class="n7-sf"><div><small>${rings.length?"Emprise au sol du bâtiment":"Surface du bâtiment"}</small><b>${nf(surf)} m²</b></div><span>${l.q.surfChauffee?"Surface chauffée déclarée":"Source : Base de données nationale des bâtiments (BDNB)"}${l.hauteur?` · hauteur ${l.q.hsp?nf(l.q.hsp,1):l.hauteur} m`:""}</span></div>`}
+ <div class="n7-sf"><div><small>${rings.length?"Emprise au sol du bâtiment":"Surface du bâtiment"}</small><b>${nf(surf)} m²</b></div><span>${l.q.surfChauffee?"Surface chauffée déclarée":"Source : BDNB"}${l.hauteur?` · hauteur ${l.q.hsp?nf(l.q.hsp,1):l.hauteur} m`:""}</span></div>`}
 async function noteGeo(l){if(l.geom||l._geoQ||l.lat==null||l.lng==null)return;l._geoQ=1;
  try{const r=await fetch("/api/bdnb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({lat:l.lat,lng:l.lng,adresse:l.adresse||""})});if(!r.ok)return;const j=await r.json();
   if(j.found&&j.geom){l.geom=j.geom;if(j.annee&&!l.annee)l.annee=j.annee;save();if(sel===l.id&&tab==="note")renderDrawer()}}catch(e){}}
 function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),E=eco(l),ok=r.fiches.filter(f=>f.etat!=="ko"),today=new Date().toLocaleDateString("fr-FR"),valid=new Date(Date.now()+S.settings.validite*864e5).toLocaleDateString("fr-FR"),sx=S.settings,ref="NE-"+String(l.siret||l.id).slice(-6)+"-"+new Date().toISOString().slice(2,10).replace(/-/g,"");
  noteGeo(l);
- const foot=n=>`<div class="pg-foot"><div class="pf-l"><b>${PAC.nom}</b> · ${PAC.forme} · ${PAC.adr}<br>SIREN ${PAC.siren} · SIRET ${PAC.siret} · ${PAC.rcs} · TVA ${PAC.tva}<br>${PAC.tel} · ${PAC.mail} · ${PAC.web}</div><div class="pf-r">Note ${ref}<br>${n} / 2</div></div>`;
+ const foot=n=>`<div class="pg-foot"><div class="pf-l"><b>${PAC.nom}</b> · ${PAC.forme} · ${PAC.adr}<br>SIREN ${PAC.siren} · SIRET ${PAC.siret} · ${PAC.rcs} · TVA ${PAC.tva}<br>${PAC.tel} · ${PAC.mail} · ${PAC.web}</div><div class="pf-r">Note ${ref}<br>${n} / 3</div></div>`;
  const head=sub=>`<div class="nt-h"><div class="nt-logo">${LOGO_FULL}</div><div class="nt-tt"><h1>Note d'éligibilité CEE</h1><span>Certificats d'économies d'énergie</span><em>${sub}</em></div></div>`;
  const surf=q.surfChauffee||l.surface,sc=score(l),lvl=sc>=70?["Potentiel fort","h"]:sc>=40?["Potentiel moyen","m"]:["Potentiel à confirmer","l"];
  const ct=q.contact?`${esc(q.contact)}${q.fonction?`<i>${esc(q.fonction)}</i>`:""}`:"";
@@ -2124,30 +2154,34 @@ function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),E=eco(l),ok=r.fiche
  const roi=E.roi?(E.rH<=0?"Immédiat":rng(E.roi[0]*12,E.roi[1]*12,v=>v<24?nf(Math.max(1,Math.round(v)))+" mois":nf(v/12,1)+" ans")):"Après devis";
  const vers=ok.map(f=>`${f.fiche} v. ${BAREMES[f.fiche].version.split(",")[0]}`).join(" · ");
  const cu=[E.ops.some(o=>/BA-110|TH-142/.test(o.f.fiche))?`${eur(sx.cDes)} HT par déstratificateur posé`:"",E.ops.some(o=>/TH-134|UT-116/.test(o.f.fiche))?`${nf(sx.cHp)} € HT par kW de groupe froid régulé`:"",E.ops.some(o=>/TH-163|TH-179/.test(o.f.fiche))?`${nf(sx.cPac)} € HT par kW de PAC`:""].filter(Boolean).join(", ");
- return `<div class="row noprint" style="justify-content:space-between"><p class="sm mut" style="margin:0">Aperçu A4, 2 pages, aux couleurs PACLIM. Les fiches non éligibles n'y figurent pas. Coûts et gains : hypothèses réglables dans Réglages.</p><button class="btn g" id="print">Imprimer / PDF</button></div>
+ return `<div class="row noprint" style="justify-content:space-between"><p class="sm mut" style="margin:0">Aperçu A4, 3 pages, aux couleurs PACLIM. Les fiches non éligibles n'y figurent pas. Coûts et gains : hypothèses réglables dans Réglages.</p><button class="btn g" id="print">Imprimer / PDF</button></div>
  ${!q.contact||!hasP?`<div class="note-warn noprint">${!hasP?"Prime non calculée : la note affichera « à chiffrer ». ":""}${!q.contact?"Interlocuteur non renseigné.":""}</div>`:""}
  <div class="note"><article class="page nt n7">${head(today+" · réf. "+ref)}
- <div class="pg-body">
-  <div class="n7-hero"><div class="n7-vis">${aerial(l,surf)}</div>
-   <div class="n7-side"><div class="n7-sc ${lvl[1]}"><small>Score d'éligibilité</small><div class="n7-sv"><b>${sc}</b><span>/100</span></div><div class="n7-bar"><i style="width:${sc}%"></i></div><em>${lvl[0]}</em><p>Établi avant visite sur la surface, la hauteur, le DPE, le chauffage et l'activité du site.</p></div>
-    <div class="n7-cl"><small>Client</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i>
-     <div class="n7-ad">${esc(l.adresse)}<br>${esc(l.cp)} ${esc(villeOf(l))}</div>${l.siret?`<div class="n7-sr">SIRET ${esc(String(l.siret).replace(/(\d{3})(\d{3})(\d{3})(\d{5})/,"$1 $2 $3 $4"))}</div>`:""}${ct?`<div class="n7-ct"><small>Interlocuteur</small>${ct}</div>`:""}</div></div></div>
+ <div class="pg-body n7-p1">
+  <div class="n7-cl"><div class="n7-ci"><small>Client</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i></div>
+   <div class="n7-cc"><div class="n7-ad">${esc(l.adresse)}<br>${esc(l.cp)} ${esc(villeOf(l))}</div>${l.siret?`<div class="n7-sr">SIRET ${esc(String(l.siret).replace(/(\d{3})(\d{3})(\d{3})(\d{5})/,"$1 $2 $3 $4"))}</div>`:""}</div>
+   ${ct?`<div class="n7-ct"><small>Interlocuteur</small>${ct}</div>`:""}
+   <div class="n7-sc ${lvl[1]}"><small>Score d'éligibilité</small><div class="n7-sv"><b>${sc}</b><span>/100</span></div><em>${lvl[0]}</em></div></div>
+  <div class="n7-vis">${aerial(l,surf)}</div>
   <div class="n7-ks">${kP}${kE}${kR}</div>
-  <h2 class="n7-h">Caractéristiques techniques du site analysé</h2>
-  <div class="n7-ts">${tile("surf",q.surfChauffee?"Surface chauffée":"Surface au sol",nf(surf)+" m²","")}${tile("haut","Hauteur",hautV,q.hsp?"":"à confirmer")}${tile("cal","Construction",l.annee?String(l.annee):"non renseignée","")}${tile("gauge","Étiquette DPE",dp?`<span class="n7-dpe d${dp}">${dp}</span>`:"non connue",dp?"BDNB":"")}
-   ${tile("fire","Chauffage",nrj||"à relever",q.pch?nf(q.pch)+" kW":"")}${tile("snow","Groupe froid",frd,q.froid!=="oui"&&froidP(l)?"à confirmer":"")}${tile("zone","Zone climatique",r.zone||"—",r.zone?"zone "+r.zone+" de la réglementation":"")}${tile("bat","Occupation",q.statutOcc==="proprio"?"Propriétaire occupant":q.statutOcc?"Locataire":"à confirmer",l.proprietaire?"Propriétaire : "+esc(String(l.proprietaire).split(",")[0]):"")}</div>
  </div>${foot(1)}</article>
  <article class="page nt n7">${head(esc(l.entreprise||"")+" · réf. "+ref)}
  <div class="pg-body">
+  <h2 class="n7-h">Caractéristiques techniques du site analysé</h2>
+  <div class="n7-ts">${tile("surf",q.surfChauffee?"Surface chauffée":"Surface au sol",nf(surf)+" m²","")}${tile("haut","Hauteur",hautV,q.hsp?"":"à confirmer")}${tile("cal","Construction",l.annee?String(l.annee):"non renseignée","")}${tile("gauge","Étiquette DPE",dp?`<span class="n7-dpe d${dp}">${dp}</span>`:"non connue",dp?"BDNB":"")}
+   ${tile("fire","Chauffage",nrj||"à relever",q.pch?nf(q.pch)+" kW":"")}${tile("snow","Groupe froid",frd,q.froid!=="oui"&&froidP(l)?"à confirmer":"")}${tile("zone","Zone climatique",r.zone||"—",r.zone?"zone "+r.zone+" de la réglementation":"")}${tile("bat","Occupation",q.statutOcc==="proprio"?"Propriétaire occupant":q.statutOcc?"Locataire":"à confirmer",l.proprietaire?"Propriétaire : "+esc(String(l.proprietaire).split(",")[0]):"")}</div>
   <h2 class="n7-h">Opérations standardisées CEE retenues</h2>
   <div class="n7-ops">${E.ops.map(card).join("")||'<p class="mut">À définir lors de la visite technique.</p>'}</div>
+ </div>${foot(2)}</article>
+ <article class="page nt n7">${head(esc(l.entreprise||"")+" · réf. "+ref)}
+ <div class="pg-body">
   <h2 class="n7-h">Déploiement technique et ingénierie financière</h2>
   <div class="n7-df"><div><h3>Déploiement technique</h3><ol class="n7-st">${stp(1,"Visite technique","Audit sur site et relevés : vérification des hauteurs sous plafond, des puissances de chauffage et de froid, et de l'activité du local.")}${stp(2,"Montage CEE","Sécurisation avant engagement : constitution intégrale du dossier réglementaire avant signature du devis, pour garantir le versement de la prime.")}${stp(3,"Installation RGE","Pose sans arrêt d'exploitation"+(d?", "+d.n+" appareils":"")+" : intervention planifiée selon vos contraintes horaires, par nos équipes qualifiées.")}${stp(4,"Conformité et mise en service","PV de réception, contrôle des performances techniques, remise de l'attestation sur l'honneur et déduction directe de la prime CEE.")}</ol></div>
    <div><h3>Ingénierie financière <span>indicatif</span></h3><table class="n7-fin"><tbody>${row("Investissement estimé HT",E.cout?eur(E.cout):"sur devis")}${row("Prime CEE estimée",hasP?"− "+rng(E.pL,E.pH,eur):"à chiffrer","g")}${row("Reste à charge",E.cout?(E.rH<=0?"0 €":rng(E.rL,E.rH,eur)):"sur devis","t")}${row("Économies sur la facture",hasE?rng(E.eL,E.eH,eur)+" par an":"à chiffrer")}${row("Retour sur investissement",roi)}</tbody></table>
    <p class="n7-fx">La prime est versée au bénéficiaire ou déduite de la facture, selon l'offre retenue. Aucun devis ne doit être signé avant le dépôt du dossier CEE.</p></div></div>
   <div class="nt-cta"><div><small>Pour sécuriser cette prime</small><b>Ne signez aucun devis avant d'avoir validé votre prime avec PACLIM.</b><span>Demandez votre visite technique.</span></div><div class="ntc">${me().nom&&!/^Commercial/.test(me().nom)?`<small>Votre interlocuteur</small><em>${esc(me().nom)}</em>`:""}<b>${esc(me().tel||PAC.tel)}</b><span>${esc(me().email||PAC.mail)}</span></div></div>
   <p class="nt-fn"><b>Estimation valable jusqu'au ${valid}.</b> Montants indicatifs, hors contrat, calculés au ${today} sur les fiches d'opérations standardisées en vigueur (${vers||"à définir"}) et une valorisation de ${nf(sx.prixBas,1)} à ${nf(sx.prixHaut,1)} € par MWh cumac. Gains annuels : kWh cumac ramenés à l'année sur la durée de vie conventionnelle de chaque fiche (actualisation 4 %), valorisés à ${nf(sx.pGaz,2)} €/kWh pour le gaz et ${nf(sx.pElec,2)} €/kWh pour l'électricité. ${cu?"Investissement estimé sur la base de "+cu+". ":""}L'éligibilité, la prime et le reste à charge définitifs dépendent de la visite technique, du devis et du respect des conditions des fiches. Les installations sont contrôlées sur site.</p>
- </div>${foot(2)}</article></div>`}
+ </div>${foot(3)}</article></div>`}
 
 /* ============ CARTES (IGN Géoplateforme, licence ouverte) ============ */
 const IGN=l=>`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${l}&STYLE=normal&TILEMATRIXSET=PM&FORMAT=${l.includes("ORTHO")?"image/jpeg":"image/png"}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
