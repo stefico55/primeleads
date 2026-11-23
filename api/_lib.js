@@ -2,10 +2,20 @@
 const FORMES=/\b(sas|sasu|sarl|eurl|sa|sci|snc|scop|selarl|groupe|societe|ets|etablissements?|holding|et fils|france|international)\b/g;
 const nz=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/&/g," et ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 const BAD_DOM=/(societe\.com|pappers|pagesjaunes|infogreffe|verif\.com|manageo|kompass|societeinfo|annuaire-entreprises|data\.gouv|facebook|linkedin|instagram|twitter|youtube|google|bing|yelp|mappy|tripadvisor|indeed|wikipedia|lefigaro|bodacc|score3|entreprises\.|firmenwissen|europages|ellisphere|dnb\.com|opencorporates|infonet|corporama|fr\.kompass|journaldunet|doctrine|legalstart|lemonde|leparisien|lyon\.fr)/i;
-function slugs(nom){const base=nz(nom).replace(FORMES," ").replace(/\s+/g," ").trim();if(!base)return[];const w=base.split(" ").filter(x=>x.length>1);const out=new Set();
- const j=w.join(""),h=w.join("-");[j,h].forEach(s=>{if(s.length>=3)["fr","com"].forEach(t=>out.add(s+"."+t))});
- if(w.length>2){const j2=w.slice(0,2).join(""),h2=w.slice(0,2).join("-");[j2,h2].forEach(s=>out.add(s+".fr"))}
- return [...out].slice(0,8)}
+// Noms utilisables : nom principal (avant la parenthèse) puis noms commerciaux entre parenthèses ; sigles "N.E.S." -> "NES".
+function names(nom){const s=String(nom||"").replace(/\b(?:[A-Za-z]\.){2,}[A-Za-z]?\.?/g,m=>m.replace(/\./g,"")).replace(/\s+/g," ");const m=s.match(/^([^(]*)\(([^)]*)\)/);
+ const main=(m?m[1]:s).trim(),alt=m?m[2].split(/[,;\/]/).map(x=>x.trim()):[];const seen=new Set(),out=[];
+ [main,...alt].forEach(x=>{const k=nz(x).replace(FORMES," ").replace(/\s+/g," ").trim();if(k.length>=2&&!seen.has(k)){seen.add(k);out.push(x)}});return out.slice(0,3)}
+const toks=n=>{const w=[];nz(n).replace(FORMES," ").split(" ").forEach(x=>{if(x.length>1&&!w.includes(x))w.push(x)});return w};
+const GEN=/^(transports?|trans|logistique|ets|etablissement|groupe|garage|menuiserie|boulangerie|entreprise|atelier|cabinet|agence)$/;
+// Domaines devinés pour chaque nom : collé, avec tirets, sans le mot générique de tête, deux premiers mots.
+function slugsN(nom){const out=new Map();
+ names(nom).forEach(n=>{const w=toks(n).filter(x=>!/^(et|de|du|des|la|le|les|cie|freres|soeurs|fils)$/.test(x)||toks(n).length<2);if(!w.length)return;const put=(s,tl)=>{if(s.length>=3)tl.forEach(t=>{if(!out.has(s+"."+t))out.set(s+"."+t,n)})};
+  put(w.join(""),["fr","com"]);put(w.join("-"),["fr","com"]);
+  if(w.length>1&&GEN.test(w[0])){const r=w.slice(1);put(r.join(""),["fr","com"]);put(r.join("-"),["fr"])}
+  if(w.length>2){put(w.slice(0,2).join(""),["fr"]);put(w.slice(0,2).join("-"),["fr"])}});
+ return [...out.entries()].slice(0,16).map(([d,n])=>({d,n}))}
+function slugs(nom){return slugsN(nom).map(x=>x.d)}
 function clean(html){return String(html||"").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<!--[\s\S]*?-->/g," ")}
 function text(html){return clean(html).replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ")}
 function decodeCf(h){try{const k=parseInt(h.slice(0,2),16);let o="";for(let i=2;i<h.length;i+=2)o+=String.fromCharCode(parseInt(h.slice(i,i+2),16)^k);return o}catch(e){return""}}
@@ -29,4 +39,4 @@ function social(html){const o={};for(const m of String(html||"").matchAll(/href=
 function hasId(html,siren,siret){const d=String(html||"").replace(/[^\d]/g,"");return !!((siret&&d.includes(siret))||(siren&&d.includes(siren)))}
 function titleMatch(html,nom,cp,ville){const t=nz(text(html).slice(0,60000)),w=nz(nom).replace(FORMES," ").split(" ").filter(x=>x.length>2);if(!w.length)return false;const nm=w.every(x=>t.includes(x));const loc=(cp&&t.includes(cp))||(ville&&t.includes(nz(ville)));return nm&&!!loc}
 function hostOk(u){try{const x=new URL(u);if(!/^https?:$/.test(x.protocol))return false;const h=x.hostname;if(!h.includes(".")||/^(\d+\.){3}\d+$/.test(h)||/localhost|\.local$|\.internal$/.test(h))return false;return !BAD_DOM.test(h)}catch(e){return false}}
-module.exports={nz,slugs,clean,text,phones,emails,links,social,hasId,titleMatch,hostOk,BAD_DOM,fmtTel};
+module.exports={nz,names,toks,slugsN,slugs,clean,text,phones,emails,links,social,hasId,titleMatch,hostOk,BAD_DOM,fmtTel};

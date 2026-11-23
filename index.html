@@ -1397,6 +1397,7 @@ select,input[type=text],input[type=search],input[type=email],input[type=tel],inp
 
 .dl .f,.dr .f{margin:0}
 .g3b{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+.bkn{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.bkn>div{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}.bkn span{display:block;font-size:11px;color:var(--mut)}.bkn b{color:var(--ink);font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .dl .g2+.g2{margin-top:10px}
 .dl .sh{margin:16px 0 8px}
 .dl .sh:first-of-type{margin-top:0}
@@ -2051,17 +2052,24 @@ function tOrgs(l){const own=(l.proprietaire||"").split(",").map(s=>s.trim()).fil
  <p class="xs mut" style="margin:0 0 10px">Occupants, propriétaires et décideurs du bâtiment. « Interlocuteur » en fait le contact utilisé dans le script, les e-mails et la note.</p>
  ${orgs.map(o=>grp(o,(l.people||[]).filter(p=>p.o===o.n),o.k==="m")).join("")}${loose.length?grp({n:"Sans entreprise",r:"À rattacher",k:"x"},loose,false).replace(/<button class="btn s" data-od="x\|undefined"[^>]*>Retirer<\/button>/,""):""}</details>`}
 window.CTS=false;document.addEventListener("toggle",e=>{if(e.target.classList&&e.target.classList.contains("cts"))window.CTS=e.target.open},true);
-function tEnt(l){const site=l.q.site||"";const g=`https://www.google.com/search?q=${encodeURIComponent((l.entreprise||"")+" Corbas")}`,pap=l.siret?`https://www.pappers.fr/entreprise/${l.siret.slice(0,9)}`:"";
+function batKnown(l){const bd=l.bd||{},it=[];
+ if(+l.surface)it.push(["Emprise au sol",nf(l.surface)+" m²"]);if(+l.hauteur)it.push(["Hauteur",l.hauteur+" m"+(/estim|faible|basse/i.test(l.fiab_h||"")?" (estimée)":"")]);
+ if(dpeOf(l))it.push(["DPE",l.dpe]);if(l.chauffage&&l.chauffage!=="inconnu")it.push(["Énergie de chauffage",tcase(String(l.chauffage).toLowerCase())]);
+ if(l.annee)it.push(["Construction",String(l.annee)]);if(l.conso)it.push(["Conso. élec. 2025",nf(l.conso)+" MWh"]);if(l.proprietaire)it.push(["Propriétaire",l.proprietaire]);
+ const src=bd.m==="proche"?"Bâtiment voisin, à vérifier sur la vue aérienne":bd.m==="aucun"?"":bd.m?"Base nationale des bâtiments (BDNB)":"";
+ if(!it.length)return `<p class="xs mut" style="margin:4px 0 0">Aucune donnée publique sur ce bâtiment : tout est à demander pendant l'appel.</p>`;
+ return `<div class="bkn">${it.map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>${src?`<p class="xs mut" style="margin:6px 0 0">Source : ${src}.</p>`:""}`}
+function tEnt(l){const site=l.q.site||"";const g=`https://www.google.com/search?q=${encodeURIComponent((l.entreprise||"")+" "+(villeOf(l)||""))}`,pap=l.siret?`https://www.pappers.fr/entreprise/${l.siret.slice(0,9)}`:"";
  const left=`<section class="card pad ctc"><div class="chd"><h3>Interlocuteur</h3><div class="acts"><button class="btn s p" data-qa="call">${ICO.tel}${l.q.tel?esc(l.q.tel):"Appeler"}</button><button class="btn s" data-qa="mail">${ICO.mail}E-mail</button><button class="btn s" data-qa="rappel">${ICO.hist}Rappel</button></div></div>
  <div class="g2">${fld(l,"contact","Nom et prénom")}${fld(l,"fonction","Fonction")}</div><div class="g2">${fld(l,"tel","Téléphone direct ou standard","tel")}${fld(l,"email","E-mail professionnel","email")}</div>
  <div class="g2">${sel2(l,"statutOcc","Propriétaire ou locataire",[["","—"],["proprio","Propriétaire occupant"],["locataire","Locataire"]])}${sel2(l,"enedis","Accord données Enedis",[["","—"],["oui","Oui, mandat à envoyer"],["non","Non"]])}</div>
  <p class="xs mut" style="margin:0">${l.q.contactSrc==="RNE"?`Nom et fonction préremplis depuis le registre officiel (dirigeant) : à confirmer à l'appel.`:`Dirigeant inscrit au RNE : ${esc(l.dirigeant||"—")}.`}${l.q.tel?"":" Téléphone : voir « Fiche enrichie » ou saisie."}</p></section>
- <section class="card pad"><div class="chd"><h3>Bâtiment</h3><span class="xs mut">recalcul en direct</span></div>
- <h4 class="sh">Local</h4><div class="g3b">${sel2(l,"activite","Activité du local",ACT)}${sel2(l,"secteur","Secteur CEE",[["","Auto ("+l.secteur+")"],["Tertiaire","Tertiaire (BAT)"],["Industrie","Industrie (IND)"],["Résidentiel","Résidentiel collectif (BAR)"]])}${fld(l,"hsp","Hauteur sous plafond (m)","number",String(l.hauteur))}${fld(l,"surfChauffee","Surface chauffée (m²)","number",String(l.surface))}</div>
- <h4 class="sh">Chauffage</h4><div class="g3b">${sel2(l,"chauffage","Type de chauffage",[["","—"],["convectif","Convectif (aérothermes, CTA)"],["radiatif","Radiatif (tubes, panneaux)"],["aucun","Non chauffé"]])}${fld(l,"pch","Puissance chauffage (kW)","number")}</div>
- <h4 class="sh">Pompe à chaleur air/eau</h4><div class="g3b">${secteur(l)==="Résidentiel"?"":sel2(l,"pac","Projet de PAC",[["","—"],["oui","Oui"],["non","Non"]])}${fld(l,"pacP","Puissance nominale de la PAC (kW)","number")}${fld(l,"pacEtas","Etas de la PAC (%)","number")}${fld(l,"pacCop","COP à 35 °C (PAC de plus de 400 kW)","number")}${secteur(l)==="Résidentiel"?sel2(l,"pacUsage","Usage de la PAC",[["","—"],["ch","Chauffage"],["ecs","Chauffage et eau chaude"]])+fld(l,"pacLog","Appartements chauffés","number"):sel2(l,"pacTemp","Application",[["","—"],["bt","Basse température"],["mt","Moyenne ou haute température"]])}${fld(l,"pacChauf","Puissance utile de la chaufferie après travaux (kW)","number")}</div>
- <h4 class="sh">Froid</h4><div class="g3b">${sel2(l,"froid","Groupe froid",[["","—"],["oui","Oui"],["non","Non"]])}${fld(l,"pel","Puissance électrique groupe (kW)","number")}${sel2(l,"cond","Condensation",[["","—"],["air","À air (atmosphère)"],["eau","À eau de nappe"]])}${secteur(l)==="Tertiaire"?sel2(l,"usage","Usage du froid",[["","—"],["refrig","Réfrigération"],["confort","Climatisation de confort"],["datacenter","Datacenter"]]):""}</div>
- <p class="xs mut" style="margin:6px 0 0">Chauffage déclaré au DPE : ${esc(l.chauffage||"inconnu")} · étiquette ${esc(l.dpe)} · propriétaire du bâtiment : ${esc(l.proprietaire||"—")}</p></section>
+ <section class="card pad bat"><div class="chd"><h3>Bâtiment</h3><span class="xs mut">recalcul en direct</span></div>
+ ${batKnown(l)}
+ <h4 class="sh">À confirmer pendant l'appel</h4><div class="g3b">${sel2(l,"activite","Activité du local",ACT)}${fld(l,"hsp","Hauteur sous plafond (m)","number",l.hauteur?String(l.hauteur):"")}${fld(l,"surfChauffee","Surface chauffée (m²)","number",l.surface?String(l.surface):"")}${sel2(l,"chauffage","Type de chauffage",[["","—"],["convectif","Convectif (aérothermes, CTA)"],["radiatif","Radiatif (tubes, panneaux)"],["aucun","Non chauffé"]])}${fld(l,"pch","Puissance chauffage (kW)","number")}${sel2(l,"froid","Groupe froid",[["",l.froid?"Probable":"—"],["oui","Oui"],["non","Non"]])}${secteur(l)==="Résidentiel"?"":sel2(l,"pac","Projet de PAC air/eau",[["","—"],["oui","Oui"],["non","Non"]])}${sel2(l,"secteur","Secteur CEE",[["","Auto ("+l.secteur+")"],["Tertiaire","Tertiaire (BAT)"],["Industrie","Industrie (IND)"],["Résidentiel","Résidentiel collectif (BAR)"]])}</div>
+ ${froidP(l)?`<h4 class="sh">Froid</h4><div class="g3b">${fld(l,"pel","Puissance électrique groupe (kW)","number")}${sel2(l,"cond","Condensation",[["","—"],["air","À air (atmosphère)"],["eau","À eau de nappe"]])}${secteur(l)==="Tertiaire"?sel2(l,"usage","Usage du froid",[["","—"],["refrig","Réfrigération"],["confort","Climatisation de confort"],["datacenter","Datacenter"]]):""}</div>`:""}
+ ${secteur(l)==="Résidentiel"||l.q.pac==="oui"?`<h4 class="sh">Pompe à chaleur air/eau</h4><div class="g3b">${fld(l,"pacP","Puissance nominale (kW)","number")}${fld(l,"pacEtas","Etas (%)","number")}${Number(l.q.pacP||0)>400?fld(l,"pacCop","COP à 35 °C","number"):""}${secteur(l)==="Résidentiel"?sel2(l,"pacUsage","Usage de la PAC",[["","—"],["ch","Chauffage"],["ecs","Chauffage et eau chaude"]])+fld(l,"pacLog","Appartements chauffés","number"):sel2(l,"pacTemp","Application",[["","—"],["bt","Basse température"],["mt","Moyenne ou haute température"]])}${fld(l,"pacChauf","Puissance chaufferie après travaux (kW)","number")}</div>`:""}
+ </section>
 `;
  const right=`<section class="card pad rsum"><h3>Prime estimée</h3>${resBox(l)}</section>
  <section class="card mapc"><div class="mini" id="mini"></div><p class="xs mut" style="margin:0;padding:8px 12px 10px">Vue aérienne IGN · emprise ${nf(l.surface)} m², hauteur ${l.hauteur} m (BDNB)${l.conso?` · ${nf(l.conso)} MWh élec. 2025 (Enedis)`:""}</p></section>
@@ -2102,18 +2110,19 @@ async function voisins(l,skip){const num=nz(l.adresse);if(!num||!l.cp)return nul
 const pid=()=>"p"+Math.random().toString(36).slice(2,9);
 function addPeople(l,org,dirs){l.people=l.people||[];dirs.forEach(d=>{if(!d.n)return;if(l.people.some(p=>p.o===org&&same(p.n,d.n)))return;l.people.push({id:pid(),n:d.n,f:d.f||"",o:org,t:"",e:"",src:"RNE"})})}
 const cache=new Map();
-async function contacts(l,e,guess){const nom=(e.ent&&e.ent.nom)||l.entreprise;if(!nom)return false;const key=((e.ent&&e.ent.siren)||nz(nom)+"|"+l.cp)+(guess?"|g":"");
+async function contacts(l,e,guess){const nom=(e.ent&&e.ent.nom)||l.entreprise;if(!nom)return false;const key=((e.ent&&e.ent.siren)||nz(nom)+"|"+l.cp)+(guess?"|g4":"");
  let r=cache.get(key);if(!r){await slot();try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
   const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,adresse:l.adresse||"",lat:l.lat,lng:l.lng,site:l.q.site||"",nosearch:!!guess}),signal:c.signal});clearTimeout(t);
   if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}if(r.cle!==false)cache.set(key,r)}
- e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,t:now()};
+ const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,t:now()};
+ if(pv&&guess&&!pv.g){["tel","email","tels","emails","fiab","src"].forEach(k=>{const v=e.ct[k];if(!v||(Array.isArray(v)&&!v.length)||v==="aucune")e.ct[k]=pv[k]});e.ct.cle=pv.cle;e.ct.g=false}
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 const nz2=0;
 function fill(l){const E=l.enr&&l.enr.ent;if(!E||!E.dir||!E.dir[0])return;l.q=l.q||{};if(!l.q.contact){l.q.contact=E.dir[0].n;if(!l.q.fonction&&E.dir[0].f)l.q.fonction=E.dir[0].f;l.q.contactSrc="RNE"}}
 const busy=new Set();
 const MINSC=40;let gate=Promise.resolve();const slot=()=>{const x=gate.then(()=>new Promise(r=>setTimeout(r,1100)));gate=x;return x};
 async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
- if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){fill(l);if(force||(l.score||0)>=MINSC){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2}else if(!l.enr.g){await contacts(l,l.enr,true);l.enr.g=true}return true}
+ if(l.enr&&l.enr.v>=1&&l.enr.ent!==undefined){fill(l);const pc=l.enr.ct;if(!force&&pc&&!pc.site&&!pc.r4&&(pc.cle||pc.g)&&!(pc.cle===false&&(l.score||0)>=MINSC)){await contacts(l,l.enr,true);return true}if(force||(l.score||0)>=MINSC){const ok=await contacts(l,l.enr);if(ok)l.enr.v=2}else if(!l.enr.g){await contacts(l,l.enr,true);l.enr.g=true}return true}
  const e={t:now(),v:1,ent:null,own:[],aut:[],voi:null};let net=false;
  const ent=await bySiret(l);if(ent!==undefined)net=true;
  if(ent===null||ent===undefined){const n=await byName(l.entreprise,l.cp);if(n===undefined&&ent===undefined)return false;net=true;if(n&&n.c)e.ent=n.c}else e.ent=ent;
@@ -2126,7 +2135,7 @@ async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
  l.enr=e;fill(l);if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}else{await contacts(l,e,true);e.g=true}return true}finally{busy.delete(l.id)}}
 let auto_run=false,auto_again=false;
-async function auto(){if(auto_run){auto_again=true;return}auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}});if(ch){save();render()}const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)||((l.score||0)<MINSC&&l.enr.v<2&&!l.enr.g)||((l.score||0)>=MINSC&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r3)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+async function auto(){if(auto_run){auto_again=true;return}auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}});if(ch){save();render()}const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)||((l.score||0)<MINSC&&l.enr.v<2&&!l.enr.g)||((l.score||0)>=MINSC&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r3)||(l.enr&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r4)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
  const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
  await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false;if(auto_again){auto_again=false;setTimeout(auto,800)}}}
