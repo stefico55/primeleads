@@ -13,6 +13,10 @@ function inRing(x,y,ring){let c=false;for(let i=0,j=ring.length-1;i<ring.length;
 function contains(g,x,y){if(!g||!g.coordinates)return false;const polys=g.type==="Polygon"?[g.coordinates]:g.coordinates;return polys.some(p=>p&&p[0]&&inRing(x,y,p[0]))}
 function dist(g,x,y){if(!g||!g.coordinates)return 1e9;let d=1e9;const polys=g.type==="Polygon"?[g.coordinates]:g.coordinates;polys.forEach(p=>(p[0]||[]).forEach(([a,b])=>{d=Math.min(d,Math.hypot(a-x,b-y))}));return d}
 const up=v=>v==null?"":String(v);
+// Contour simplifié en Lambert-93 (anneaux extérieurs, mètres entiers, 120 points max) pour le dessiner sur la vue aérienne de la note.
+function outline(g){if(!g||!g.coordinates)return null;const polys=g.type==="Polygon"?[g.coordinates]:g.coordinates,rings=polys.map(p=>p&&p[0]).filter(r=>r&&r.length>2);
+ const tot=rings.reduce((a,r)=>a+r.length,0);if(!tot)return null;const st=Math.max(1,Math.ceil(tot/120));
+ return rings.map(r=>r.filter((_,i)=>i%st===0||i===r.length-1).map(([a,b])=>[Math.round(a),Math.round(b)])).filter(r=>r.length>2)}
 module.exports=async(req,rsp)=>{
  rsp.setHeader("cache-control","no-store");
  if(req.method!=="POST")return rsp.status(405).json({err:"POST"});
@@ -32,8 +36,8 @@ module.exports=async(req,rsp)=>{
  const en=up(b.type_energie_chauffage_tertiaire||b.type_energie_chauffage),gen=up(b.type_generateur_chauffage_tertiaire||b.type_generateur_chauffage);
  const out={ok:true,found:true,match,id:b.batiment_groupe_id,surface:Math.round(b.s_geom_groupe||b.surface_emprise_sol||0),hauteur:b.hauteur_mean!=null?Math.round(b.hauteur_mean):0,
   fiab_h:up(b.fiabilite_hauteur),dpe:up(b.classe_bilan_dpe||b.classe_conso_energie_dpe_tertiaire),chauffage:[en,gen].filter(Boolean).join(" ")||"inconnu",
-  proprietaire:(b.l_denomination_proprietaire||[]).slice(0,3).join(", "),annee:b.annee_construction||null,usage:up(b.usage_principal_bdnb_open)};
+  proprietaire:(b.l_denomination_proprietaire||[]).slice(0,3).join(", "),annee:b.annee_construction||null,usage:up(b.usage_principal_bdnb_open),geom:outline(b.geom_groupe)};
  console.log(JSON.stringify({bdnb:out.id,match,surface:out.surface,n:rows.length}));
  return rsp.json(out)};
 module.exports.config={maxDuration:15};
-module.exports._t={l93,sameAdr,contains,API,COLS};
+module.exports._t={l93,sameAdr,contains,outline,API,COLS};
