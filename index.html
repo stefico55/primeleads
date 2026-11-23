@@ -1687,6 +1687,51 @@ div.n7-ph.nofoto{border-radius:2.5mm}
 /* impression : rien de l'application ne doit passer sur la note */
 @media print{.foot,.top,.noprint{display:none!important}.drawer,.db,.note{padding:0!important;margin:0!important;gap:0!important;border:0!important;background:#fff!important}.note{display:block!important}.page.nt{box-shadow:none!important;border:0!important;margin:0!important}}
 
+/* ===== DOSSIER : couvertures (maquette Stéphane V3), cotes relevées sur son PDF, en mm ===== */
+@font-face{font-family:"Lato PL";font-weight:400;font-display:block;src:url(note/lato-normal.woff2) format("woff2")}
+@font-face{font-family:"Lato PL";font-weight:700;font-display:block;src:url(note/lato-bold.woff2) format("woff2")}
+@font-face{font-family:"Lato PL";font-weight:800;font-display:block;src:url(note/lato-heavy.woff2) format("woff2")}
+.page.cv{position:relative;overflow:hidden;height:297mm;min-height:297mm;font-family:"Lato PL",Lato,system-ui,sans-serif;line-height:1;color:#fff;font-size:10pt}
+.cv *{margin:0;font-style:normal}
+.cv>*,.cv-foot>*{position:absolute}
+.cv1{background:#042244 url(note/couverture.jpg) center top/210mm 297mm no-repeat}
+.cv .cv-logo{left:15.6mm;top:14.2mm;width:77.4mm}.cv .cv-logo svg{display:block;width:100%;height:auto}
+.cv-pill{left:156.8mm;top:17.7mm;right:0;height:9.4mm;border-radius:1.3mm 0 0 1.3mm;background:linear-gradient(90deg,#2089dd,#1564b4);font-weight:800;font-size:3.6mm;line-height:9.4mm;padding-left:5.2mm;letter-spacing:-.005em;white-space:nowrap}
+.cv-t{left:15.9mm;top:70.9mm;font-weight:800;font-size:16.1mm;letter-spacing:-.012em;line-height:1}
+.cv-t span{display:block;white-space:nowrap;letter-spacing:-.016em}.cv-t span.g{letter-spacing:-.02em}.cv-t span+span{margin-top:2.6mm}.cv .g{color:#6ac530}
+.cv-s{left:16.6mm;top:115.7mm;font-size:5.3mm;line-height:7.8mm}
+.cv-s{margin-top:-1.25mm}
+.cv-card{left:15.9mm;top:173.5mm;min-width:107.4mm;max-width:178mm;background:#fff;border-radius:1.8mm;padding:3.1mm 6mm 3.8mm 4.6mm;color:#102d52;box-sizing:border-box}
+.cv-card small{display:block;font-weight:800;font-size:2.8mm;letter-spacing:.16em;color:#2a638e}
+.cv-card b{display:block;font-weight:800;font-size:5.3mm;margin-top:3.5mm;line-height:1.05}
+.cv-card span{display:block;font-size:3.35mm;margin-top:2.2mm}
+.cv-card em{display:block;font-weight:800;font-size:3.35mm;color:#2a638e;margin-top:7.4mm}
+.cv-band{left:0;right:0;top:246.9mm;bottom:0;background:#52b51f}.cv-band>*{position:absolute}
+.cv-badge{left:18.6mm;top:9.6mm;width:26.6mm;height:auto}
+.cv-bt{left:49.5mm;top:21mm;font-weight:800;font-size:6.5mm;white-space:nowrap}
+.cv-web{right:10.6mm;top:38.6mm;font-weight:800;font-size:5.6mm}
+.cv4{background:linear-gradient(180deg,#17547c 0,#0a2849 225mm,#6ac530 225mm,#6ac530 227.7mm,#fff 227.7mm)}
+.cv-deco{left:0;top:0;width:210mm;height:225mm}
+.cv-cee{left:166.5mm;top:22mm;font-weight:800;font-size:6mm;color:#69bf2c;letter-spacing:.04em}
+.cv-t2{left:15.9mm;top:55.2mm;font-weight:800;line-height:1}
+.cv-t2 span{display:block;white-space:nowrap;font-size:15.5mm;letter-spacing:.002em}.cv-t2 span+span{font-size:16.9mm;margin-top:2.5mm;color:#69bf2c}
+.cv-s2{left:16.6mm;top:95.2mm;font-size:5.17mm;line-height:7mm;margin-top:-1mm}
+.cv-hr{left:16.4mm;width:176.6mm;height:.25mm;background:rgba(255,255,255,.2)}
+.cv-row{left:0;right:0;height:25mm}.cv-row>*{position:absolute}
+.cv-row em{left:16.9mm;top:0;font-weight:800;font-size:5.3mm;color:#69bf2c}
+.cv-row b{left:34.9mm;top:-.3mm;font-weight:800;font-size:7.4mm}
+.cv-row span{left:34.9mm;top:9.2mm;font-size:4.24mm;color:#d2e3ef;white-space:nowrap}
+.cv-foot{left:0;right:0;top:0;bottom:0}
+.cv .cv-logo2{left:15.4mm;top:234.3mm;width:70.8mm}.cv .cv-logo2 svg{display:block;width:100%;height:auto}
+.cv-cn{left:125.6mm;top:237.8mm;font-weight:800;font-size:3.5mm;letter-spacing:.12em;color:#69bf2c}
+.cv-tel{left:125.2mm;top:244.2mm;font-weight:800;font-size:7.4mm;color:#102e52;letter-spacing:.005em}
+.cv-hr2{left:16.2mm;width:177.8mm;top:262.4mm;height:.25mm;background:#dae3ea}
+.cv-adr{left:16.2mm;top:267.4mm;font-weight:700;font-size:3.83mm;color:#102e52}
+.cv-ml{left:16.2mm;top:273.8mm;font-size:3.83mm;color:#102e52;white-space:pre}
+.cv-dc{left:16.2mm;top:287.4mm;font-size:3.12mm;color:#2a648e}
+.cv .cv-l4{left:16.2mm;top:14.5mm;width:74.2mm}
+@media print{.page.cv{break-after:page}}
+
 /* ===== colonne : logo plein cadre sur blanc, menu bleu ciel ===== */
 @media(min-width:901px){
  .top{border-right:1px solid var(--line)}
@@ -2234,6 +2279,23 @@ function aerial(l,surf){if(l.lat==null||l.lng==null)return`<div class="n7-ph nof
 async function noteGeo(l){if(l.geom||l._geoQ||l.lat==null||l.lng==null)return;l._geoQ=1;
  try{const r=await fetch("/api/bdnb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({lat:l.lat,lng:l.lng,adresse:l.adresse||""})});if(!r.ok)return;const j=await r.json();
   if(j.found&&j.geom){l.geom=j.geom;if(j.annee&&!l.annee)l.annee=j.annee;save();if(sel===l.id&&tab==="note")renderDrawer()}}catch(e){}}
+// Couvertures du dossier (maquette de Stéphane, 23/11) : 1re de couverture personnalisée, 4e de couverture fixe.
+const adrTypo=a=>String(a||"").replace(/\b(Rue|Avenue|Boulevard|Chemin|All[ée]e|Impasse|Place|Route|Quai|Cours|Voie|Zone|Rond-Point)\b/g,m=>m.toLowerCase());
+function noteCover(l,ref,today){const nm=esc(l.entreprise||"Votre entreprise");
+ return `<article class="page cv cv1"><div class="cv-logo">${LOGO_FULL}</div><div class="cv-pill">NOTE D’ÉLIGIBILITÉ</div>
+ <h1 class="cv-t"><span>Votre potentiel</span><span class="g">d’économies d’énergie</span></h1>
+ <p class="cv-s">Analyse préliminaire des opportunités<br>liées aux certificats d’économies d’énergie.</p>
+ <div class="cv-card"><small>PRÉPARÉ POUR</small><b>${nm}</b><span>${esc(adrTypo(l.adresse))} · ${esc(l.cp)} ${esc(villeOf(l))}</span><em>${ref}&nbsp;&nbsp;·&nbsp;&nbsp;${today}</em></div>
+ <div class="cv-band"><img class="cv-badge" src="note/badge-cee.png" alt="CEE éligible"><b class="cv-bt">Certificats d’économies d’énergie</b><b class="cv-web">Paclim.fr</b></div></article>`}
+function noteBack(){const row=(n,t,d,y)=>`<div class="cv-row" style="top:${y}mm"><em>${n}</em><b>${t}</b><span>${d}</span></div>`;
+ return `<article class="page cv cv4"><svg class="cv-deco" viewBox="0 0 210 225" preserveAspectRatio="none" aria-hidden="true"><path d="M152 61 L210 14 L210 112 Z" fill="#fff" fill-opacity=".045"/><g fill="none" stroke="#fff" stroke-opacity=".11" stroke-width=".25"><circle cx="207" cy="134" r="115"/><circle cx="207" cy="134" r="94"/><circle cx="207" cy="134" r="73"/><circle cx="207" cy="134" r="52"/></g></svg>
+ <div class="cv-logo cv-l4">${LOGO_FULL}</div><b class="cv-cee">CEE</b>
+ <h1 class="cv-t2"><span>De l’analyse</span><span class="g">à la solution.</span></h1>
+ <p class="cv-s2">PACLIM vous accompagne dans la qualification<br>et la concrétisation de vos projets CEE.</p>
+ <i class="cv-hr" style="top:120.1mm"></i><i class="cv-hr" style="top:150.9mm"></i><i class="cv-hr" style="top:181.6mm"></i>
+ ${row("01","Étudier","Analyse du bâtiment et de ses besoins.",127.3)}${row("02","Qualifier","Identification des opérations CEE pertinentes.",158)}${row("03","Accompagner","Visite technique, chiffrage et démarches.",188.7)}
+ <div class="cv-foot"><div class="cv-logo2">${LOGO_FULL.replace(/#fff/g,"#102e52")}</div><small class="cv-cn">CONTACTEZ-NOUS</small><b class="cv-tel">${esc(PAC.tel)}</b><i class="cv-hr2"></i>
+ <b class="cv-adr">${esc(PAC.adr.replace(", "," · "))}</b><span class="cv-ml">${esc(PAC.mail)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${esc(PAC.web)}</span><span class="cv-dc">Document non contractuel. Éligibilité et montants soumis à vérification technique.</span></div></article>`}
 function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),E=eco(l),ok=r.fiches.filter(f=>f.etat!=="ko"),today=new Date().toLocaleDateString("fr-FR"),valid=new Date(Date.now()+S.settings.validite*864e5).toLocaleDateString("fr-FR"),sx=S.settings,ref="NE-"+String(l.siret||l.id).slice(-6)+"-"+new Date().toISOString().slice(2,10).replace(/-/g,"");
  noteGeo(l);
  const foot=n=>`<div class="pg-foot"><div class="pf-l"><b>${PAC.nom}</b> · ${PAC.forme} · ${PAC.adr}<br>SIREN ${PAC.siren} · SIRET ${PAC.siret} · ${PAC.rcs} · TVA ${PAC.tva}<br>${PAC.tel} · ${PAC.mail} · ${PAC.web}</div><div class="pf-r">Note ${ref}<br><b>Page ${n} / 3</b></div></div>`;
@@ -2260,9 +2322,9 @@ function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),E=eco(l),ok=r.fiche
  const roi=E.roi?(E.rH<=0?"Immédiat":rng(E.roi[0]*12,E.roi[1]*12,v=>v<24?nf(Math.max(1,Math.round(v)))+" mois":nf(v/12,1)+" ans")):"Après devis";
  const vers=ok.map(f=>`${f.fiche} v. ${BAREMES[f.fiche].version.split(",")[0]}`).join(" · ");
  const cu=[E.ops.some(o=>/BA-110|TH-142/.test(o.f.fiche))?`${eur(sx.cDes)} HT par déstratificateur posé`:"",E.ops.some(o=>/TH-134|UT-116/.test(o.f.fiche))?`${nf(sx.cHp)} € HT par kW de groupe froid régulé`:"",E.ops.some(o=>/TH-163|TH-179/.test(o.f.fiche))?`${nf(sx.cPac)} € HT par kW de PAC`:""].filter(Boolean).join(", ");
- return `<div class="row noprint" style="justify-content:space-between"><p class="sm mut" style="margin:0">Aperçu A4, 3 pages, aux couleurs PACLIM. Les fiches non éligibles n'y figurent pas. Coûts et gains : hypothèses réglables dans Réglages.</p><button class="btn g" id="print">Imprimer / PDF</button></div>
+ return `<div class="row noprint" style="justify-content:space-between"><label class="sm" style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="ncouv" ${sx.noteCouv!==false?"checked":""}> Couvertures</label><p class="sm mut" style="margin:0">Aperçu A4, ${sx.noteCouv!==false?"5 pages avec couvertures":"3 pages"}, aux couleurs PACLIM. Les fiches non éligibles n'y figurent pas. Coûts et gains : hypothèses réglables dans Réglages.</p><button class="btn g" id="print">Imprimer / PDF</button></div>
  ${!q.contact||!hasP?`<div class="note-warn noprint">${!hasP?"Prime non calculée : la note affichera « à chiffrer ». ":""}${!q.contact?"Interlocuteur non renseigné.":""}</div>`:""}
- <div class="note"><article class="page nt n7">${head(today+" · réf. "+ref)}
+ <div class="note">${sx.noteCouv!==false?noteCover(l,ref,today):""}<article class="page nt n7">${head(today+" · réf. "+ref)}
  <div class="pg-body n7-p1">
   <div class="n7-cl"><div class="n7-cm"><div class="n7-ci"><small>Client</small><b>${esc(l.entreprise||"à identifier")}</b><i>${esc(typo(l))}</i></div>
    <div class="n7-mt"><div><small>Adresse du site</small>${esc(l.adresse)}<br>${esc(l.cp)} ${esc(villeOf(l))}</div>${l.siret?`<div><small>SIRET</small><span class="n7-nw">${esc(String(l.siret).replace(/(\d{3})(\d{3})(\d{3})(\d{5})/,"$1 $2 $3 $4"))}</span></div>`:""}${ct?`<div><small>Interlocuteur</small>${ct}</div>`:""}</div></div>
@@ -2286,7 +2348,7 @@ function tNote(l){const r=calc(l),es=estim(l),q=l.q,d=dim(l),E=eco(l),ok=r.fiche
    <p class="n7-fx">La prime est versée au bénéficiaire ou déduite de la facture, selon l'offre retenue. Aucun devis ne doit être signé avant le dépôt du dossier CEE.</p></div></div>
   <div class="nt-cta"><div><small>Pour sécuriser cette prime</small><b>Ne signez aucun devis avant d'avoir validé votre prime avec PACLIM.</b><span>Demandez votre visite technique.</span></div><div class="ntc">${me().nom&&!/^Commercial/.test(me().nom)?`<small>Votre interlocuteur</small><em>${esc(me().nom)}</em>`:""}<b>${esc(me().tel||PAC.tel)}</b><span>${esc(me().email||PAC.mail)}</span></div></div>
   <p class="nt-fn"><b>Estimation valable jusqu'au ${valid}.</b> Montants indicatifs, hors contrat, calculés au ${today} sur les fiches d'opérations standardisées en vigueur (${vers||"à définir"}) et une valorisation de ${nf(sx.prixBas,1)} à ${nf(sx.prixHaut,1)} € par MWh cumac. Gains annuels : kWh cumac ramenés à l'année sur la durée de vie conventionnelle de chaque fiche (actualisation 4 %), valorisés à ${nf(sx.pGaz,2)} €/kWh pour le gaz et ${nf(sx.pElec,2)} €/kWh pour l'électricité. ${cu?"Investissement estimé sur la base de "+cu+". ":""}L'éligibilité, la prime et le reste à charge définitifs dépendent de la visite technique, du devis et du respect des conditions des fiches. Les installations sont contrôlées sur site.</p>
- </div>${foot(3)}</article></div>`}
+ </div>${foot(3)}</article>${sx.noteCouv!==false?noteBack():""}</div>`}
 
 /* ============ CARTES (IGN Géoplateforme, licence ouverte) ============ */
 const IGN=l=>`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${l}&STYLE=normal&TILEMATRIXSET=PM&FORMAT=${l.includes("ORTHO")?"image/jpeg":"image/png"}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
@@ -2475,6 +2537,7 @@ function bindDrawer(l){const D=$("#drawer");
  $$("#drawer [data-copy]").forEach(b=>b.onclick=()=>copy(b.dataset.copy==="intro"?`Objet : ${$("#mObj").value}\n\n${$("#mBody").value}`:$("#mRel").value,"Texte copié"));
  const ag=$("#aiGo");if(ag)ag.onclick=()=>genMail(l);const ar=$("#aiReset");if(ar)ar.onclick=()=>{delete l.draft;save();const y=$(".db").scrollTop;renderDrawer();$(".db").scrollTop=y;toast("Modèle standard rétabli")};
  ["mObj","mBody"].forEach(i=>{const el=$("#"+i);if(el)el.onchange=()=>{const m=mails(l);l.draft={...(l.draft||{}),obj:$("#mObj").value,corps:$("#mBody").value,t:now()};if(l.draft.obj===m.obj&&l.draft.corps===m.corps)delete l.draft;save()}});
+ const nc=$("#ncouv");if(nc)nc.onchange=()=>{S.settings.noteCouv=nc.checked;save();renderDrawer()};
  const pr=$("#print");if(pr)pr.onclick=()=>{try{window.print()}catch(e){}setTimeout(()=>toast("Si rien ne s'ouvre : l'impression sera active sur la version en ligne"),400)}}
 const ico=p=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 document.addEventListener("click",e=>{if(OPEN&&!e.target.closest(".fd")){OPEN=null;render()}});
