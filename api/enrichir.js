@@ -21,8 +21,8 @@ module.exports=async(req,rsp)=>{
  const cand=new Map(),add=(u,k)=>{const h=host(u);if(!h||SKIP.test(h)||cand.has(h))return;cand.set(h,{url:u,kind:k})};
  if(q.site)try{add(new URL(q.site).origin,"site")}catch(e){}
  // 1. recherche (1 requête, 2e seulement si rien de fiable) ; 2. extraits des résultats
- const snippets=[];let rl=null,sErr=null;
- const handle=r=>{if(r.retry){sErr="retry";return}if(r.err){sErr="err"+r.err;return}rl=r.rl||rl;r.res.forEach(x=>{const tx=L.nz(x.title+" "+x.txt),rel=nt.length&&nt.every(t=>tx.includes(t)),loc=tx.includes(q.cp)||(vil&&tx.includes(vil))||(q.siren&&(x.title+x.txt).replace(/\D/g,"").includes(q.siren));
+ const snippets=[];let rl=null,sErr=null,snipAll="";
+ const handle=r=>{if(r.retry){sErr="retry";return}if(r.err){sErr="err"+r.err;return}rl=r.rl||rl;r.res.forEach(x=>{snipAll+=" "+x.url+" "+x.title+" "+x.txt;const tx=L.nz(x.title+" "+x.txt),rel=nt.length&&nt.every(t=>tx.includes(t)),loc=tx.includes(q.cp)||(vil&&tx.includes(vil))||(q.siren&&(x.title+x.txt).replace(/\D/g,"").includes(q.siren));
    if(rel&&loc)snippets.push({host:host(x.url),txt:x.title+" \n "+x.txt});add(x.url,L.hostOk(x.url)?"result":"dir")})};
  if(key){handle(await brave(`${nom} ${q.ville} contact`,key));if(sErr==="retry")return rsp.status(200).json({retry:true})}
  L.slugs(nom).forEach(d=>add("https://"+d,"guess"));
@@ -31,10 +31,13 @@ module.exports=async(req,rsp)=>{
    const ident=L.hasId(all,q.siren,q.siret),h=host(home.url).split(".")[0],loc=L.titleMatch(all,nom,q.cp,q.ville),slug=nt.length&&(h===nt.join("")||h===nt.join("-")||h.replace(/-/g,"")===nt.join("")),hostTok=nt.some(x=>x.length>3&&h.includes(x)),nameIn=nt.length&&nt.every(x=>L.nz(L.text(home.body).slice(0,40000)).includes(x));
    const own=c.kind!=="dir"&&L.hostOk(home.url)&&((ident&&(hostTok||slug||c.kind!=="result"))||(c.kind==="guess"?(loc||(slug&&nameIn)):(loc&&hostTok)));
    const dirOk=ident&&!own;DBG.push(`page ${host(home.url)} ${c.kind} ident=${ident} loc=${loc} own=${own} tel=${L.phones(all).length}`);
-   if(!own&&!dirOk)return null;return{host:host(home.url),site:home.url.replace(/\/+$/,""),own,ident,ph:L.phones(all),em:L.emails(all),social:L.social(all)}}))).filter(Boolean);
+   const pend=!own&&c.kind==="guess"&&slug&&L.hostOk(home.url);
+   if(!own&&!dirOk&&!pend)return null;return{host:host(home.url),site:home.url.replace(/\/+$/,""),own,pend:pend&&!dirOk,ident,ph:L.phones(all),em:L.emails(all),social:L.social(all),txt:dirOk?all.toLowerCase().slice(0,150000):""}}))).filter(Boolean);
  let pages=await readPages([...cand.values()].slice(0,10));
  // 2e requête avec le SIREN seulement si on n'a rien de vérifiable
  if(key&&!sErr&&q.siren&&!pages.some(x=>x.own||x.ident)&&!snippets.length&&Date.now()-t0<15000){const before=new Set(cand.keys());handle(await brave(`"${q.siren}" ${nom}`,key));const fresh=[...cand.entries()].filter(([h])=>!before.has(h)).map(x=>x[1]).slice(0,6);pages=pages.concat(await readPages(fresh))}
+ // un site au nom exact de la société, même vide, est retenu si au moins un annuaire ou un résultat le cite
+ {const corpus=(snipAll+" "+pages.map(x=>x.txt||"").join(" ")).toLowerCase();pages.forEach(pg=>{if(pg.pend){if(corpus.includes(pg.host.toLowerCase()))pg.own=true;pg.pend=false}});pages=pages.filter(x=>!x.pend)}
  snippets.forEach(s=>pages.push({host:s.host,site:null,own:false,ident:false,ph:L.phones(s.txt),em:L.emails(s.txt),social:{},snip:true}));
  const vote=sel=>{const m=new Map();pages.forEach(pg=>{const seen=new Set();sel(pg).forEach((v,k)=>{if(seen.has(v))return;seen.add(v);const e=m.get(v)||{n:0,own:false,r:k};e.n++;if(pg.own)e.own=true;e.r=Math.min(e.r,k);m.set(v,e)})});return [...m.entries()].sort((a,b)=>(b[1].own-a[1].own)||(b[1].n-a[1].n)||(a[1].r-b[1].r)).map(x=>({v:x[0],n:x[1].n,own:x[1].own}))};
  const tels=vote(pg=>pg.ph.filter(x=>!x.mobile||pg.own).map(x=>x.v)),mails=vote(pg=>pg.em);
