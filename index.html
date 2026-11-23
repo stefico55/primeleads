@@ -1877,9 +1877,9 @@ const cache=new Map();
 async function contacts(l,e){const nom=(e.ent&&e.ent.nom)||l.entreprise;if(!nom)return false;const key=(e.ent&&e.ent.siren)||nz(nom)+"|"+l.cp;
  let r=cache.get(key);if(!r){await slot();try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
   const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,lat:l.lat,lng:l.lng,site:l.q.site||""}),signal:c.signal});clearTimeout(t);
-  if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}cache.set(key,r)}
+  if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}if(r.cle!==false)cache.set(key,r)}
  e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,t:now()};
- l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return true}
+ l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 const nz2=0;
 const busy=new Set();
 const MINSC=40;let gate=Promise.resolve();const slot=()=>{const x=gate.then(()=>new Promise(r=>setTimeout(r,1100)));gate=x;return x};
@@ -1897,7 +1897,7 @@ async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
  l.enr=e;if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}return true}finally{busy.delete(l.id)}}
 let auto_run=false;
-async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr||(l.enr.v<2&&(l.score||0)>=MINSC)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+async function auto(){if(auto_run)return;auto_run=true;try{const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
  const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
  await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false}}
@@ -2361,7 +2361,7 @@ async function boot(){
   const {data}=await CL.sb.auth.getSession();
   if(data.session){try{await clStart(data.session)}catch(e){showAuth(clMsg(e))}}else showAuth()}
  catch(e){render()}}
-setTimeout(()=>ENR.auto(),6000);
+setTimeout(()=>ENR.auto(),6000);setTimeout(()=>ENR.auto(),25000);
 if(window.supabase)boot();else{window.__sbFail=()=>{if(window.__sbReady){window.__sbReady=null;render()}};window.__sbReady=()=>{window.__sbReady=null;boot()};setTimeout(()=>{if(window.__sbReady){window.__sbReady=null;render()}},4000)}
 }
 </script>
