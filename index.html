@@ -2065,7 +2065,7 @@ function rKnown(){const k=new Set();S.leads.forEach(l=>{k.add(String(l.siret||l.
 function rLead(r,e,s){const d=(r.dirigeants||[]).find(x=>x.type_dirigeant==="personne physique"),dn=d?[String(d.prenoms||"").split(",")[0].trim(),d.nom].filter(Boolean).join(" "):"";
  const tr=e.tranche_effectif_salarie||r.tranche_effectif_salarie,big=["32","41","42","51","52","53"].includes(tr)?15:["21","22","31"].includes(tr)?10:0;
  return{id:String(e.siret),adresse:e.adresse?String(e.adresse).replace(/\s+\d{5}\s+.*$/,""):"",cp:e.code_postal||"",ville:e.libelle_commune||"",entreprise:r.nom_complet||r.nom_raison_sociale||"",autres:e.nom_commercial&&e.nom_commercial!==r.nom_complet?[e.nom_commercial]:[],naf:e.activite_principale||r.activite_principale||"",siret:String(e.siret),
-  dirigeant:dn?`${dn.toUpperCase()}${d.qualite?" ("+d.qualite+")":""}`:"",proprietaire:"",surface:0,hauteur:0,fiab_h:"",secteur:s.sect,froid:!!s.froid,chauffage:"",dpe:"",conso:0,score:Math.min(90,s.sc+big),scoreProv:true,
+  dirigeant:dn?`${dn.toUpperCase()}${d.qualite?" ("+d.qualite+")":""}`:"",proprietaire:"",surface:0,hauteur:0,fiab_h:"",secteur:s.sect,froid:!!s.froid,chauffage:"",dpe:"",conso:0,score:Math.min(90,s.sc+big),scoreProv:true,scS:s.sc,
   lat:e.latitude?+e.latitude:null,lng:e.longitude?+e.longitude:null,oppo:!!r.opposition_diffusion_commerciale,statut:"new",q:{},journal:[],src:{k:"recherche",t:s.t,zone:RS.zone,d:now()}}}
 async function rPreview(){RS.err="";const z=rZone(RS.zone);if(!z.dep.length&&!z.cp.length){RS.err="Indique un département (ex. 69) ou des codes postaux (ex. 69960, 69800).";return render()}
  RS.step="busy";render();try{const j=await rGet(rParams(1));RS.n=j.total_results||0;RS.step="preview"}catch(e){RS.err=e.message||"Registre injoignable";RS.step="form"}render()}
@@ -2075,7 +2075,7 @@ async function rRun(){RS.step="run";RS.done=0;RS.added=0;RS.skip=0;RS.nopp=0;RS.
    res.forEach(r=>{if(RS.opp&&r.opposition_diffusion_commerciale){RS.nopp++;return}(r.matching_etablissements||[]).filter(e=>e.etat_administratif!=="F"&&inZone(e)&&!(RS.eff&&e.tranche_effectif_salarie==="NN")).forEach(e=>{if(add.length>=RS.max)return;if(known.has(String(e.siret))){RS.skip++;return}known.add(String(e.siret));add.push(rLead(r,e,s))})});
    RS.done=add.length;if(V==="rech")render();if(page>=(j.total_pages||1))break}}
  catch(e){RS.err=(e.message||"Registre injoignable")+(add.length?" : les prospects déjà trouvés sont ajoutés.":"")}
- if(add.length){S.leads=S.leads.concat(add);migr();save()}RS.added=add.length;RS.step="done";render();if(add.length){toast(add.length+" prospects ajoutés : enrichissement en cours");ENR.auto()}}
+ if(add.length){S.leads=S.leads.concat(add);migr();save()}RS.added=add.length;RS.step="done";render();if(add.length){toast(add.length+" prospects ajoutés : analyse des bâtiments en cours");bdRun().then(()=>ENR.auto())}}
 function vRech(){const s=RSECT.find(x=>x.k===RS.sect),busy=RS.step==="busy"||RS.step==="run",dis=busy?"disabled":"";
  const form=`<div class="f"><label for="rS">Secteur</label><select id="rS" ${dis}>${RSECT.map(x=>`<option value="${x.k}" ${x.k===RS.sect?"selected":""}>${esc(x.t)}</option>`).join("")}</select></div>
  <div class="f"><label for="rZ">Zone : département(s) ou code(s) postal(aux)</label><input id="rZ" value="${esc(RS.zone)}" placeholder="69 ou 69960, 69800" ${dis}></div>
@@ -2090,11 +2090,30 @@ function vRech(){const s=RSECT.find(x=>x.k===RS.sect),busy=RS.step==="busy"||RS.
   ${RS.n?`<p style="font-size:13px;opacity:.75">Coordonnées ensuite : environ ${nf(Math.round(n*1.5))} requêtes de recherche web (moins de ${Math.max(1,Math.ceil(n*1.5*0.005))} $), en arrière-plan tant que l'appli reste ouverte.</p>`:""}
   <div style="display:flex;gap:8px">${RS.n?`<button class="btn p" data-r="run">Lancer la recherche</button>`:""}<button class="btn" data-r="back">Modifier</button></div>`}
  else if(RS.step==="run")act=`<p>Ajout des établissements… <b>${RS.done}</b> trouvés${RS.skip?`, ${RS.skip} déjà connus`:""}.</p>`;
- else act=`<p><b>${RS.added}</b> prospect${RS.added>1?"s":""} ajouté${RS.added>1?"s":""}${RS.skip?` (${RS.skip} déjà connus, ignorés)`:""}${RS.nopp?`, ${RS.nopp} société${RS.nopp>1?"s":""} écartée${RS.nopp>1?"s":""} car opposée${RS.nopp>1?"s":""} à la prospection`:""}. Registre rempli ; site, téléphone et e-mail arrivent au fil de l'enrichissement.</p><div style="display:flex;gap:8px"><button class="btn p" data-r="see">Voir les bâtiments</button><button class="btn" data-r="new">Nouvelle recherche</button></div>`;
- return `<section class="card" style="max-width:720px;margin:16px auto;padding:20px"><h2 style="margin-top:0">Nouvelle recherche</h2><p style="margin-top:0;opacity:.75">Trouve les sociétés d'un secteur sur une zone au registre officiel, puis complète chaque fiche automatiquement. Surface, hauteur et DPE arriveront au lot 2 ; en attendant, le score est provisoire.</p>${form}${err}${act}</section>`}
+ else act=`<p><b>${RS.added}</b> prospect${RS.added>1?"s":""} ajouté${RS.added>1?"s":""}${RS.skip?` (${RS.skip} déjà connus, ignorés)`:""}${RS.nopp?`, ${RS.nopp} société${RS.nopp>1?"s":""} écartée${RS.nopp>1?"s":""} car opposée${RS.nopp>1?"s":""} à la prospection`:""}.${BD.busy?` Analyse des bâtiments : <b>${BD.done}</b> / ${BD.tot}.`:" Bâtiments analysés."} Site, téléphone et e-mail arrivent ensuite au fil de l'enrichissement.</p><div style="display:flex;gap:8px"><button class="btn p" data-r="see">Voir les bâtiments</button><button class="btn" data-r="new">Nouvelle recherche</button></div>`;
+ return `<section class="card" style="max-width:720px;margin:16px auto;padding:20px"><h2 style="margin-top:0">Nouvelle recherche</h2><p style="margin-top:0;opacity:.75">Trouve les sociétés d'un secteur sur une zone au registre officiel, puis complète chaque fiche automatiquement. Chaque fiche reçoit ensuite la surface, la hauteur et le DPE du bâtiment (BDNB), qui donnent le score CEE.</p>${form}${err}${act}</section>`}
 function bindRech(){const g=id=>document.getElementById(id);if(!g("rS"))return;g("rS").onchange=e=>{RS.sect=e.target.value;RS.step="form";render()};g("rE").onchange=e=>{RS.eff=e.target.value;RS.step="form";render()};
  g("rZ").onchange=e=>{RS.zone=e.target.value;RS.step="form";render()};g("rO").onchange=e=>{RS.opp=e.target.checked};g("rM").onchange=e=>{RS.max=Math.max(1,Math.min(RMAX,+e.target.value||RMAX));render()};
  $$("#app [data-r]").forEach(b=>b.onclick=()=>{const a=b.dataset.r;if(a==="prev")rPreview();else if(a==="run")rRun();else if(a==="back"||a==="new"){RS.step="form";RS.err="";render()}else if(a==="see"){V="pros";render()}})}
+/* ---- lot 2 : bâtiment BDNB (surface, hauteur, DPE) et score CEE ---- */
+function bScore(l){const s=RSECT.find(x=>x.t===(l.src&&l.src.t)),sc=l.scS!=null?l.scS:s?s.sc:50,S2=l.surface||0,h=l.hauteur||0,d=String(l.dpe||"");
+ let p=Math.round(sc/2);
+ p+=S2>=20000?25:S2>=10000?20:S2>=5000?15:S2>=2000?9:S2>=1000?4:0;
+ p+=!h?4:h>=8?12:h>=5?8:0;
+ p+=/^[EFG]$/.test(d)?12:d==="D"?8:/^[ABC]$/.test(d)?2:5;
+ if(l.froid)p+=12;if(secteur(l)==="Industrie")p+=3;
+ return Math.max(5,Math.min(95,p))}
+const BD={busy:false,done:0,tot:0};
+function bdTodo(){return S.leads.filter(l=>l.src&&l.src.k==="recherche"&&!l.bd&&l.lat!=null&&l.lng!=null)}
+async function bdOne(l){for(let i=0;i<3;i++){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),16000);
+ const r=await fetch("/api/bdnb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({lat:l.lat,lng:l.lng,adresse:l.adresse||""}),signal:c.signal});clearTimeout(t);
+ if(r.status===429){await new Promise(x=>setTimeout(x,3000*(i+1)));continue}if(!r.ok)return false;const j=await r.json();
+ if(j.found){l.surface=j.surface||0;l.hauteur=j.hauteur||0;l.fiab_h=j.fiab_h||"";l.dpe=j.dpe||"—";l.chauffage=j.chauffage||"inconnu";if(j.proprietaire)l.proprietaire=j.proprietaire}
+ else l.dpe=l.dpe||"—";
+ l.bd={m:j.found?j.match:"aucun",id:j.id||"",d:now()};l.score=bScore(l);l.scoreProv=false;return true}catch(e){if(i===2)return false}}return false}
+async function bdRun(){if(BD.busy)return;const todo=bdTodo();if(!todo.length)return;BD.busy=true;BD.done=0;BD.tot=todo.length;let k=0;
+ const work=async()=>{while(k<todo.length){const l=todo[k++];await bdOne(l);BD.done++;if(BD.done%10===0||BD.done===BD.tot){save();if(V==="rech")render()}}};
+ await Promise.all([work(),work(),work()]);BD.busy=false;save();render()}
 function bindMain(){
  $$("#app [data-sort]").forEach(b=>b.onclick=()=>{const k=b.dataset.sort;if(SORT.k!==k)SORT={k,d:SORTS[k].asc?1:-1};else if(SORT.d===(SORTS[k].asc?1:-1))SORT.d=-SORT.d;else SORT={k:null,d:-1};render();const n=$(`#app [data-sort="${k}"]`);n&&n.focus()});
  $$("#app [data-fd]").forEach(b=>b.onclick=()=>{OPEN=OPEN===b.dataset.fd?null:b.dataset.fd;render();const o=$("#app .fm .fo");o&&o.focus()});
@@ -2450,7 +2469,7 @@ async function boot(){
   const {data}=await CL.sb.auth.getSession();
   if(data.session){try{await clStart(data.session)}catch(e){showAuth(clMsg(e))}}else showAuth()}
  catch(e){render()}}
-setTimeout(()=>ENR.auto(),6000);setTimeout(()=>ENR.auto(),25000);
+setTimeout(()=>bdRun().then(()=>ENR.auto()),6000);setTimeout(()=>ENR.auto(),25000);
 if(window.supabase)boot();else{window.__sbFail=()=>{if(window.__sbReady){window.__sbReady=null;render()}};window.__sbReady=()=>{window.__sbReady=null;boot()};setTimeout(()=>{if(window.__sbReady){window.__sbReady=null;render()}},4000)}
 }
 </script>
