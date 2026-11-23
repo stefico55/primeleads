@@ -1909,7 +1909,7 @@ async function contacts(l,e,guess){const nom=(e.ent&&e.ent.nom)||l.entreprise;if
  let r=cache.get(key);if(!r){await slot();try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
   const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,lat:l.lat,lng:l.lng,site:l.q.site||"",nosearch:!!guess}),signal:c.signal});clearTimeout(t);
   if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}if(r.cle!==false)cache.set(key,r)}
- e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,t:now()};
+ e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r2:true,t:now()};
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 const nz2=0;
 function fill(l){const E=l.enr&&l.enr.ent;if(!E||!E.dir||!E.dir[0])return;l.q=l.q||{};if(!l.q.contact){l.q.contact=E.dir[0].n;if(!l.q.fonction&&E.dir[0].f)l.q.fonction=E.dir[0].f;l.q.contactSrc="RNE"}}
@@ -1929,7 +1929,7 @@ async function run(l,force){if(busy.has(l.id))return false;busy.add(l.id);try{
  e.own.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});e.aut.forEach(o=>{if(o.c)addPeople(l,o.nom,o.c.dir)});
  l.enr=e;fill(l);if(force||(l.score||0)>=MINSC){const okc=await contacts(l,e);if(okc)e.v=2}else{await contacts(l,e,true);e.g=true}return true}finally{busy.delete(l.id)}}
 let auto_run=false;
-async function auto(){if(auto_run)return;auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}});if(ch){save();render()}const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)||((l.score||0)<MINSC&&l.enr.v<2&&!l.enr.g)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
+async function auto(){if(auto_run)return;auto_run=true;try{let ch=0;S.leads.forEach(l=>{if(l.enr&&!(l.q&&l.q.contact)){fill(l);ch++}});if(ch){save();render()}const todo=S.leads.filter(l=>!l.enr||((l.enr.v<2||(l.enr.ct&&l.enr.ct.cle===false))&&(l.score||0)>=MINSC)||((l.score||0)<MINSC&&l.enr.v<2&&!l.enr.g)||((l.score||0)>=MINSC&&l.enr.ct&&!l.enr.ct.site&&!l.enr.ct.r2)).sort((a,b)=>(b.score||0)-(a.score||0));if(!todo.length)return;let n=0,fail=0,i=0;toast("Enrichissement des fiches : "+todo.length+" bâtiments…");
  const w=async()=>{while(i<todo.length&&!(fail>=3&&!n)){const l=todo[i++];const ok=await run(l);if(ok){n++;if(n%4===0)save()}else fail++}};
  await Promise.all([w(),w(),w()]);
  save();if(n){toast("Fiches enrichies : "+n+" bâtiment"+(n>1?"s":""));render()}}finally{auto_run=false}}
