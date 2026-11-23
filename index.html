@@ -1711,7 +1711,7 @@ ul.tw{columns:2;column-gap:8mm;margin:1mm 0 0;padding-left:4.5mm}
       <path fill="#55b426" fill-rule="evenodd" d="M115.5,276.9v-45c0-7,3-11,9-15l55-32v55L115.5,276.9Z"/>
     </svg></div><label for="user" class="hide-m">Commercial</label><select id="user"></select><button class="sbt" id="sbt" type="button"></button></div>
 </header>
-<main id="app"></main>
+<div id="demoNotice" hidden role="status" style="margin:16px 28px 0;padding:10px 14px;border:1px solid #d9e2fa;border-radius:9px;background:#f0f4ff;color:#344b84;font-size:13px">Mode démo · Les modifications restent dans ce navigateur. <a href="?connexion=1">Connexion équipe</a></div><main id="app"></main>
 <footer class="foot"><span><b>PrimeLeads CEE</b> · Prospection et qualification des primes CEE</span><span>Licence : PACLIM</span></footer>
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-label="Fiche prospect" aria-hidden="true"></aside>
@@ -2517,13 +2517,13 @@ $("#authF").onsubmit=async e=>{e.preventDefault();const em=$("#auE").value.trim(
  catch(err){$("#auErr").textContent=clMsg(err)}finally{go.disabled=false;go.textContent="Se connecter"}};
 $("#auMagic").onclick=async()=>{const em=$("#auE").value.trim();if(!em){$("#auErr").textContent="Saisis d'abord ton e-mail.";$("#auE").focus();return}
  const b=$("#auMagic");b.disabled=true;$("#auErr").textContent="";
- try{const {error}=await CL.sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});if(error)throw error;
+ try{const {error}=await CL.sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname+"?connexion=1"}});if(error)throw error;
   $("#auErr").style.color="#1d6b34";$("#auErr").textContent="Lien envoyé à "+em+". Ouvre l'e-mail et clique sur le lien (pense aux courriers indésirables)."}
  catch(err){$("#auErr").style.color="";$("#auErr").textContent=/rate|seconds|limit/i.test(err.message||"")?"Trop de demandes : patiente une minute avant de réessayer.":/signups? not allowed|not found/i.test(err.message||"")?"Aucun compte pour cet e-mail. Demande à ton administrateur de t'ajouter.":clMsg(err)}
  finally{b.disabled=false}};
 $("#auDemo").onclick=()=>{sessionStorage.setItem("pl_demo","1");hideAuth();render()};
-async function boot(){
- if(!window.supabase||sessionStorage.getItem("pl_demo")){render();return}
+async function boot(){const teamLogin=new URLSearchParams(location.search).has("connexion");if(teamLogin)sessionStorage.removeItem("pl_demo");
+  if(!teamLogin){sessionStorage.setItem("pl_demo","1");hideAuth();document.getElementById("demoNotice").hidden=false;render();return} if(!window.supabase){render();return}
  try{CL.sb=supabase.createClient(CL.url,CL.key,{auth:{persistSession:true,autoRefreshToken:true}});
   const {data}=await CL.sb.auth.getSession();
   if(data.session){try{await clStart(data.session)}catch(e){showAuth(clMsg(e))}}else showAuth()}
