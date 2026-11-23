@@ -29,7 +29,7 @@ module.exports=async(req,rsp)=>{
  const readPages=async list=>(await Promise.all(list.map(async c=>{const home=await get(c.url,4500);if(home.status!==200)return null;let all=home.body;
    if(c.kind!=="dir"&&L.hostOk(home.url)){const lk=L.links(home.body,home.url).filter(u=>host(u)===host(home.url)).slice(0,3);const more=await Promise.all(lk.map(u=>get(u,3500)));all+="\n"+more.filter(x=>x.status===200).map(x=>x.body).join("\n")}
    const ident=L.hasId(all,q.siren,q.siret),h=host(home.url).split(".")[0],loc=L.titleMatch(all,nom,q.cp,q.ville),slug=nt.length&&(h===nt.join("")||h===nt.join("-")||h.replace(/-/g,"")===nt.join("")),hostTok=nt.some(x=>x.length>3&&h.includes(x)),nameIn=nt.length&&nt.every(x=>L.nz(L.text(home.body).slice(0,40000)).includes(x));
-   const own=c.kind!=="dir"&&L.hostOk(home.url)&&(ident||(c.kind==="guess"?(loc||(slug&&nameIn)):(loc&&hostTok)));
+   const own=c.kind!=="dir"&&L.hostOk(home.url)&&((ident&&(hostTok||slug||c.kind!=="result"))||(c.kind==="guess"?(loc||(slug&&nameIn)):(loc&&hostTok)));
    const dirOk=ident&&!own;DBG.push(`page ${host(home.url)} ${c.kind} ident=${ident} loc=${loc} own=${own} tel=${L.phones(all).length}`);
    if(!own&&!dirOk)return null;return{host:host(home.url),site:home.url.replace(/\/+$/,""),own,ident,ph:L.phones(all),em:L.emails(all),social:L.social(all)}}))).filter(Boolean);
  let pages=await readPages([...cand.values()].slice(0,10));
