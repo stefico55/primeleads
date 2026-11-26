@@ -1821,6 +1821,7 @@ div.n7-ph.nofoto{border-radius:2.5mm}
 <div class="toast" id="toast" role="status"></div>
 <div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="card pad"><h2 id="dlgT"></h2><div id="dlgB"></div><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="dlgNo">Annuler</button><button class="btn p" id="dlgOk">Valider</button></div></div></div>
 <div id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="authT"><form id="authF" novalidate><div class="aulg" id="auLg"></div><h1 id="authT">Connexion</h1><p class="aus">Accède à tes bâtiments et à ton équipe.</p><label for="auE">E-mail</label><input id="auE" type="email" autocomplete="username" required><label for="auP">Mot de passe</label><input id="auP" type="password" autocomplete="current-password" required><p id="auErr" role="alert"></p><button class="aub" id="auGo" type="submit">Se connecter</button><button class="aub2" id="auMagic" type="button">Recevoir un lien de connexion par e-mail</button><button class="lnk" id="auDemo" type="button">Voir la démo (données locales, rien n'est enregistré en ligne)</button></form></div>
+<script src="cee/regles.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async onload="window.__sbReady&&window.__sbReady()" onerror="window.__sbFail&&window.__sbFail()"></script>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -1869,20 +1870,7 @@ const LOGO_FULL=`<svg viewBox="108 92 992 272" role="img" aria-label="PACLIM, vo
     </svg>`;
 const NAF={"46.31Z":"Grossiste fruits et légumes","49.41B":"Transport routier de proximité","49.41A":"Transport routier interurbain","46.39B":"Grossiste alimentaire","53.20Z":"Messagerie, colis","46.69B":"Grossiste équipements industriels","29.32Z":"Équipementier automobile","25.93Z":"Fabrication d'articles métalliques","70.10Z":"Siège social","95.22Z":"Réparation électroménager","28.96Z":"Machines pour plasturgie","29.20Z":"Carrosserie, remorques","46.34Z":"Grossiste boissons","45.19Z":"Commerce de véhicules","13.20Z":"Tissage","27.40Z":"Fabrication d'éclairage","25.11Z":"Structures métalliques","46.52Z":"Grossiste composants électroniques","46.69C":"Grossiste fournitures pro"};
 /* Barèmes vérifiés sur les fiches officielles (ecologie.gouv.fr) le 20/11/2026, PAC (BAT-TH-163, BAR-TH-179) le 23/11/2026 — kWh cumac par kW (déstratification, froid), par m² (BAT-TH-163), par appartement (BAR-TH-179) */
-const BAREMES={
- "BAT-TH-142":{nom:"Déstratification d'air (tertiaire)",version:"A71.4, depuis le 01/08/2025",H1:{conv:3900,rad:1400},H2:{conv:4500,rad:1600},H3:{conv:4600,rad:1600},cond:["Bâtiment tertiaire existant","Local clos, hauteur sous plafond ou faîtage ≥ 5 m","Consigne de chauffage ≥ 15 °C","Exclus : entrepôts logistiques, réserves, stockage","Brasseurs d'air plafonniers non éligibles"]},
- "IND-BA-110":{nom:"Déstratification d'air (industrie)",version:"A71.4, depuis le 01/08/2025",H1:{conv:7200,rad:2500},H2:{conv:8000,rad:2800},H3:{conv:8500,rad:3000},cond:["Bâtiment industriel existant","Local clos, hauteur sous plafond ou faîtage ≥ 5 m","Consigne de chauffage ≥ 15 °C lorsque le local est occupé","Exclus : entrepôts logistiques, réserves, locaux de stockage","Brasseurs d'air plafonniers non éligibles","Chauffage convectif et radiatif cumulables"]},
- "BAT-TH-134":{nom:"Régulation HP flottante (tertiaire)",version:"A22.1",usages:{refrig:{H1:{air:19100,eau:13400},H2:{air:17000,eau:12800},H3:{air:16400,eau:10500}},confort:{H1:{air:2000,eau:670},H2:{air:1800,eau:480},H3:{air:1600,eau:290}},datacenter:{H1:{air:22800,eau:14500},H2:{air:20500,eau:13900},H3:{air:20200,eau:11300}}},cond:["Bâtiment tertiaire en France métropolitaine","Puissance électrique nominale du groupe (plaque signalétique, hors compresseurs de secours)","Étude technique préalable obligatoire, établie par un professionnel ou un bureau d'étude","Bâtiments neufs CE1 exclus pour la climatisation de confort"]},
- "IND-UT-116":{nom:"Régulation HP flottante (industrie)",version:"A14.1",H1:{air:14300,eau:11700},H2:{air:14300,eau:11700},H3:{air:13500,eau:10400},cond:["Site industriel","Puissance électrique nominale du groupe (plaque signalétique, hors compresseurs de secours)","Mise en place par un professionnel"]},
- "BAT-TH-163":{nom:"Pompe à chaleur air/eau (tertiaire)",version:"A81.2, depuis le 30/04/2026",unit:"kWh cumac par m² chauffé",
-  etas:[[111,{H1:1100,H2:900,H3:600}],[126,{H1:1200,H2:1000,H3:700}],[175,{H1:1300,H2:1000,H3:700}]],
-  cop:[[3.4,{H1:1100,H2:900,H3:600}],[4.5,{H1:1200,H2:1000,H3:700}]],
-  fac:{hotel:.7,sante:1.1,enseignement:.8,bureaux:1.2,commerce:.9,autre:.7},
-  cond:["Bâtiment tertiaire existant depuis plus de 2 ans à la date d'engagement","PAC de 400 kW ou moins : Etas ≥ 111 % (moyenne ou haute température) ou ≥ 126 % (basse température)","PAC de plus de 400 kW : COP ≥ 3,4 à 35 °C (EN 14511-2)","Étude de dimensionnement datée et signée, remise dès l'engagement","Chauffage seul, ou chauffage et eau chaude : une PAC dédiée à l'eau chaude seule est exclue"]},
- "BAR-TH-179":{nom:"Pompe à chaleur collective air/eau (résidentiel)",version:"A81.2, depuis le 30/04/2026",unit:"kWh cumac par appartement chauffé",
-  etas:[[111,{ch:{H1:100000,H2:84000,H3:60000},ecs:{H1:146000,H2:127000,H3:100000}}],[126,{ch:{H1:107000,H2:89000,H3:64000},ecs:{H1:155000,H2:135000,H3:107000}}],[150,{ch:{H1:112000,H2:93000,H3:67000},ecs:{H1:163000,H2:142000,H3:112000}}],[175,{ch:{H1:115000,H2:96000,H3:69000},ecs:{H1:167000,H2:146000,H3:115000}}],[190,{ch:{H1:117000,H2:97000,H3:70000},ecs:{H1:170000,H2:148000,H3:117000}}]],
-  cond:["Résidentiel collectif existant","PAC air/eau de 400 kW ou moins, pour un chauffage collectif","Etas ≥ 111 %","Une PAC dédiée à l'eau chaude seule est exclue","Non cumulable avec BAR-TH-169 si la PAC fait chauffage et eau chaude"]}};
-const ZONE_DEP={"01":"H1","38":"H1","69":"H1"};
+const BAREMES=CEE.FICHES; // fiches, versions, dates d'effet et sources : cee/regles.js
 const STATUTS={new:["À appeler",""],email:["Email envoyé","b"],rappel:["Rappel prévu","a"],rdv:["RDV technicien","g"],no:["Pas intéressé","r"],bad:["Mauvais numéro","r"]};
 const ACT=[["","— à demander —"],["bureaux","Bureaux"],["commerce","Commerce / showroom"],["atelier","Atelier / production"],["logistique","Entrepôt logistique / stockage"],["froid","Entrepôt frigorifique"],["sante","Santé"],["enseignement","Enseignement"],["hotel","Hôtellerie-restauration"],["autre","Autre"]];
 const COLS={Tertiaire:"#24578f",Industrie:"#4f9a24",Résidentiel:"#8a4fb0"};
@@ -1916,48 +1904,15 @@ function ask(title,html,ok){$("#dlgT").textContent=title;$("#dlgB").innerHTML=ht
 function copy(t,m){navigator.clipboard?.writeText(t).then(()=>toast(m),()=>toast("Copie refusée par le navigateur"))}
 const NAF2={"52.10A":"Entreposage frigorifique","52.10B":"Entreposage non frigorifique","52.24A":"Manutention portuaire","52.29A":"Messagerie, fret express","52.29B":"Affrètement, organisation des transports","53.20Z":"Autres activités de poste et de courrier","10.11Z":"Transformation de viande de boucherie","10.12Z":"Transformation de volailles","10.13A":"Préparation industrielle de viande","10.13B":"Charcuterie","10.20Z":"Transformation de poisson","10.39A":"Autre transformation de légumes","10.51A":"Fabrication de lait liquide","10.52Z":"Fabrication de glaces","10.71A":"Fabrication industrielle de pain","10.85Z":"Fabrication de plats préparés","46.32A":"Commerce de gros de viandes","46.33Z":"Commerce de gros de produits laitiers","46.38B":"Commerce de gros alimentaire spécialisé","46.39B":"Commerce de gros alimentaire non spécialisé","46.71Z":"Commerce de gros de combustibles","46.72Z":"Commerce de gros de minerais et métaux","46.73A":"Commerce de gros de bois et matériaux","46.73B":"Commerce de gros d'appareils sanitaires","46.74A":"Commerce de gros de quincaillerie","46.74B":"Commerce de gros de fournitures de plomberie","46.75Z":"Commerce de gros de produits chimiques","46.76Z":"Commerce de gros d'autres produits intermédiaires","46.90Z":"Commerce de gros non spécialisé","47.11D":"Supermarché","47.11F":"Hypermarché","47.52B":"Grande surface de bricolage","47.59A":"Commerce de meubles","47.76Z":"Jardinerie, animalerie","55.10Z":"Hôtel","86.10Z":"Activités hospitalières","87.10A":"Hébergement médicalisé pour personnes âgées","87.10B":"Hébergement médicalisé pour enfants handicapés","87.30A":"Hébergement social pour personnes âgées","85.31Z":"Enseignement secondaire général","85.32Z":"Enseignement secondaire technique","85.42Z":"Enseignement supérieur"};
 const typo=l=>NAF[l.naf]||NAF2[l.naf]||(/^(1\d|2\d|3[0-3])\./.test(l.naf||"")?"Industrie (NAF "+l.naf+")":l.naf?"NAF "+l.naf:"Activité à identifier");
-const secteur=l=>l.q.secteur||l.secteur;
-const zone=l=>ZONE_DEP[(l.cp||"").slice(0,2)]||null;
-const froidP=l=>l.q.froid==="oui"||(l.q.froid!=="non"&&l.froid);
+const secteur=l=>CEE.secteur(l);
+const zone=l=>CEE.zoneDe(l.cp);
+const froidP=l=>CEE.froidP(l);
 const due=l=>l.statut==="rappel"&&l.rappel&&new Date(l.rappel)<=new Date(Date.now()+432e5);
 function score(l){let s=l.score;if(l.q.statutOcc==="proprio")s+=8;if(l.q.tel)s+=5;if(l.q.pch||l.q.pel)s+=5;if(l.q.activite==="logistique"&&secteur(l)==="Tertiaire"&&!froidP(l))s-=25;if(l.q.froid==="non"&&l.froid)s-=10;return Math.max(0,Math.min(100,s))}
 
 /* ============ MOTEUR CEE ============ */
-const pacTier=(T,v)=>{let r=null;for(const [m,x] of T)if(v>=m)r=x;return r};
-function pacFiche(l,res){
- const z=zone(l),q=l.q,f=res?"BAR-TH-179":"BAT-TH-163",b=BAREMES[f],p={fiche:f,nom:b.nom,etat:"wait",msgs:[]};
- const P=Number(q.pacP||0),S=Number(q.surfChauffee||0),ch=Number(q.pacChauf||0),N=Number(q.pacLog||0),E=Number(q.pacEtas||0),C=Number(q.pacCop||0);
- if(res&&P>400){p.etat="ko";p.msgs.push("PAC de plus de 400 kW : hors BAR-TH-179");return p}
- const big=!res&&P>400;
- if(!P)p.msgs.push("Puissance de la PAC à demander");
- if(!z)p.msgs.push("Zone climatique inconnue");
- if(big){if(!C)p.msgs.push("COP à 35 °C de la PAC à demander");else if(C<3.4){p.etat="ko";p.msgs.push("COP inférieur à 3,4 : non éligible");return p}}
- else{if(!E)p.msgs.push("Etas de la PAC à demander");else if(E<111){p.etat="ko";p.msgs.push("Etas inférieur à 111 % : non éligible");return p}
-  else if(E<126&&!res){if(!q.pacTemp)p.msgs.push("Application basse ou moyenne/haute température ?");else if(q.pacTemp==="bt"){p.etat="ko";p.msgs.push("Basse température : Etas ≥ 126 % requis");return p}}}
- if(res){if(!N)p.msgs.push("Nombre d'appartements chauffés à demander");if(!q.pacUsage)p.msgs.push("Chauffage seul ou chauffage et eau chaude ?")}
- else{if(!S)p.msgs.push("Surface chauffée par la PAC à demander");if(!q.activite)p.msgs.push("Activité du local à confirmer")}
- if(!ch)p.msgs.push("Puissance utile de la chaufferie après travaux à demander");
- if(p.msgs.length)return p;
- const R=P<0.4*ch?P/ch:1;let k;
- if(res)k=pacTier(b.etas,E)[q.pacUsage][z]*N*R;
- else{const rate=(big?pacTier(b.cop,C):pacTier(b.etas,E))[z],fac=b.fac[q.activite]??b.fac.autre;k=rate*S*fac*R}
- p.kwhc=Math.round(k);p.etat="ok";return p}
-function calc(l){
- const z=zone(l),q=l.q,out=[],ind=secteur(l)==="Industrie";
- if(secteur(l)==="Résidentiel"){out.push(pacFiche(l,true));const k=out[0].kwhc||0;return{fiches:out,kwhc:k,lo:k/1000*S.settings.prixBas,hi:k/1000*S.settings.prixHaut,zone:z}}
- const fD=ind?"IND-BA-110":"BAT-TH-142",bD=BAREMES[fD],h=Number(q.hsp||0),d={fiche:fD,nom:bD.nom,etat:"wait",msgs:[]};
- if(q.activite==="logistique"){d.etat="ko";d.msgs.push("Entrepôt logistique ou stockage : exclu de "+fD)}
- else if(q.hsp&&h<5){d.etat="ko";d.msgs.push("Hauteur sous plafond < 5 m")}
- else if(q.chauffage==="aucun"){d.etat="ko";d.msgs.push("Local non chauffé")}
- else{if(!q.hsp)d.msgs.push("Hauteur sous plafond à confirmer");if(!q.chauffage)d.msgs.push("Type de chauffage à demander");if(!q.pch)d.msgs.push("Puissance du chauffage à demander");if(!ind&&!q.activite)d.msgs.push("Activité du local à confirmer");
-  if(q.chauffage&&q.pch&&z&&(ind||q.activite)&&h>=5){d.kwhc=bD[z][q.chauffage==="radiatif"?"rad":"conv"]*Number(q.pch);d.etat="ok"}}
- out.push(d);
- if(froidP(l)){const fH=ind?"IND-UT-116":"BAT-TH-134",bH=BAREMES[fH],p={fiche:fH,nom:bH.nom,etat:"wait",msgs:[]};
-  if(q.froid!=="oui")p.msgs.push("Groupe froid à confirmer");if(!q.pel)p.msgs.push("Puissance électrique du groupe à demander");if(!q.cond)p.msgs.push("Condensation à air ou à eau ?");if(!ind&&!q.usage)p.msgs.push("Usage du froid à préciser");
-  if(q.froid==="oui"&&q.pel&&q.cond&&z&&(ind||q.usage)){p.kwhc=(ind?bH[z]:bH.usages[q.usage][z])[q.cond]*Number(q.pel);p.etat="ok"}out.push(p)}
- if(q.pac==="oui"){if(ind)out.push({fiche:"BAT-TH-163",nom:BAREMES["BAT-TH-163"].nom,etat:"ko",msgs:["BAT-TH-163 concerne le tertiaire : pas de fiche PAC retenue pour ce site industriel"]});else out.push(pacFiche(l,false))}
- const k=out.reduce((a,f)=>a+(f.kwhc||0),0);return{fiches:out,kwhc:k,lo:k/1000*S.settings.prixBas,hi:k/1000*S.settings.prixHaut,zone:z};
-}
+/* Moteur CEE déterministe et versionné : cee/regles.js (testé par node --test). */
+function calc(l){return CEE.evaluer(l,S.settings)}
 function dim(l){if(secteur(l)==="Résidentiel")return null;const h=Number(l.q.hsp||l.hauteur||0),s=Number(l.q.surfChauffee||l.surface||0);if(h<5||!s)return null;const m=h>=10?["SM-DES-85S",800]:["SM-DES-65S",600];return{modele:m[0],n:Math.ceil(s/m[1]),base:l.q.surfChauffee?"surface chauffée":"emprise au sol"}}
 
 /* ============ ÉTAT ============ */
@@ -2260,7 +2215,7 @@ function estim(l){if(secteur(l)==="Résidentiel")return null;const r=calc(l);if(
 /* ===== NOTE D'ÉLIGIBILITÉ v7 : vue aérienne IGN, score, indicateurs, ingénierie financière ===== */
 Object.assign(NI,{leaf:'<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15M5 19l7-7"/>',cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',zone:'<path d="M12 14V4.5a2 2 0 1 0-4 0V14a4 4 0 1 0 4 0z"/><path d="M16 6h4M16 10h3"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',wallet:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1V7zM4 7l11-3v3M16 13.5h.01"/>',gauge:'<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/>'});
 // Durée de vie conventionnelle des fiches (ans) : kWh cumac = kWh/an × somme actualisée à 4 % sur cette durée.
-const DVA={"BAT-TH-142":15,"IND-BA-110":15,"BAT-TH-134":14,"IND-UT-116":14,"BAT-TH-163":17,"BAR-TH-179":17};
+const DVA=Object.fromEntries(Object.entries(CEE.FICHES).map(([k,v])=>[k,v.dvc])); // durées de vie officielles (BAT-TH-163 et BAR-TH-179 : 22 ans)
 const actu=n=>(1-Math.pow(1.04,-n))/(1-1/1.04);
 // WGS84 -> Lambert-93 (même formule IGN que api/bdnb.js)
 function l93c(lat,lng){const e=0.0818191910428158,n=0.725607765053267,C=11754255.426096,r=Math.PI/180,p=lat*r,s=Math.sin(p);
