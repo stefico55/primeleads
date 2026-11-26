@@ -2027,7 +2027,7 @@ function vPros(){
  const bulk=`<div class="bk" id="bk" role="region" aria-label="Actions groupées" ${SEL.size?"":"hidden"}><b>${SEL.size} sélectionné${SEL.size>1?"s":""}</b>
   <select id="bkAsg" aria-label="Assigner à"><option value="">Assigner à…</option>${tn.map((u,i)=>`<option value="${i}">${esc(u.nom)}</option>`).join("")}<option value="none">Retirer l'assignation</option></select>
   <select id="bkSt" aria-label="Changer le statut"><option value="">Changer le statut…</option>${Object.entries(STATUTS).filter(([k])=>k!=="rappel").map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("")}</select>
-  <button class="btn s p" id="bkPros">Ajouter à ma prospection</button><button class="btn s" id="bkUnp">Retirer</button><button class="btn s" id="bkCsv">Exporter en CSV</button><button class="lnk" id="bkClr">Désélectionner</button></div>`;
+  <button class="btn s p" id="bkPros">Ajouter à ma prospection</button><button class="btn s" id="bkUnp">Retirer</button><button class="btn s" id="bkXl">Exporter en Excel</button><button class="btn s" id="bkMail">Envoyer par e-mail</button><button class="btn s" id="bkCsv" title="Copie la sélection pour la coller dans un tableur">Copier</button><button class="lnk" id="bkClr">Désélectionner</button></div>`;
  const rows=L.map(l=>{const r=calc(l),st=STATUTS[l.statut],sc=score(l);
   const fc=r.fiches.map(x=>`<span class="fc ${x.etat==="ok"?"":x.etat==="ko"?"k":"w"}" title="${esc(x.msgs.join(" · "))}">${x.fiche}</span>`).join("");
   return `<tr data-id="${esc(l.id)}" class="${sel===l.id?"on":""}${SEL.has(l.id)?" ck-on":""}"><td class="ck"><input type="checkbox" data-ck="${esc(l.id)}" ${SEL.has(l.id)?"checked":""} aria-label="Sélectionner ${esc(l.entreprise||"ce bâtiment")}"></td><td><span class="mt ${sc>=70?"h":sc>=40?"m":""}">${sc} %</span></td>
@@ -2486,8 +2486,8 @@ function rAddAct(v){v=String(v||"").trim();if(!v)return;RS.naf=RS.naf||[];const 
  if(!add.length){RS.msg=`Aucune activité trouvée pour « ${v} ». Essayez un autre mot ou un code NAF (ex. 10.71A).`;return render()}
  add.forEach(x=>{if(!RS.naf.includes(x))RS.naf.push(x)});RS.sect="libre";RS.msg="";RS.step="form";render()}
 // Tri des résultats : logements, indépendants domiciliés et adresses d'immeuble sont masqués d'office.
-const RNZ_ADR=/\b(res|residence|imm|immeuble|etg|etage|esc|escalier|appt?|apt|hlm)\b/,RNZ_ZA=/\b(zi|za|zac|zae|zone|parc d activite\w*|industriel\w*|artisanal\w*)\b/;
-function rNoise(l){const m=(l.bd&&l.bd.m)||"aucun",a=znorm(l.adresse);
+const RNZ_ADR=/\b(res|residence|im|imm|immeuble|etg|etage|esc|escalier|appt?|apt|hlm)\b/,RNZ_ZA=/\b(zi|za|zac|zae|zone|parc d activite\w*|industriel\w*|artisanal\w*)\b/;
+function rNoise(l){const m=(l.bd&&l.bd.m)||"aucun",a=znorm(l.adresse);if(/^47\.11[DF]/.test(l.naf||""))return"";
  if(l.bd&&/residentiel/.test(znorm(l.bd.u)))return"Logement";
  if(l.ei&&m!=="adresse"&&m!=="emprise")return"Indépendant sans local identifié";
  if((m==="proche"||m==="aucun")&&RNZ_ADR.test(a)&&!RNZ_ZA.test(a))return"Adresse d'immeuble";return""}
@@ -2614,7 +2614,8 @@ function bindMain(){
  const p=$("#bkPros");if(p)p.onclick=()=>{const L=pick();L.forEach(l=>{if(!l.pros){l.pros=true;if(l.asg==null)l.asg=S.user;log(l,"Ajouté à la prospection")}});save();toast(L.length+" bâtiment(s) ajouté(s) à ma prospection");render()};
  const u=$("#bkUnp");if(u)u.onclick=()=>{const L=pick();L.forEach(l=>{if(l.pros){l.pros=false;log(l,"Retiré de la prospection")}});save();toast(L.length+" bâtiment(s) retiré(s)");render()};
  const c=$("#bkCsv");if(c)c.onclick=()=>copy(csvOf(pick()),pick().length+" ligne(s) copiée(s) : collez-les dans un tableur");
- const x=$("#bkClr");if(x)x.onclick=()=>{SEL.clear();render()}}
+ const xl=$("#bkXl");if(xl)xl.onclick=()=>xlExport(pick());const ml=$("#bkMail");if(ml)ml.onclick=()=>xlMail(pick());
+  const x=$("#bkClr");if(x)x.onclick=()=>{SEL.clear();render()}}
  $$("#app tbody tr[data-id]").forEach(r=>r.onclick=e=>{if(e.target.closest("button,select,input,a,label,option"))return;openLead(r.dataset.id)});
  $$("#app [data-st]").forEach(s=>s.onchange=()=>{const l=S.leads.find(x=>x.id===s.dataset.st);if(s.value==="rappel"){askRappel(l);return}setStatus(l,s.value);render();toast("Statut : "+STATUTS[s.value][0])});
  $$("[data-tm]").forEach(i=>i.onchange=()=>{S.settings.team[+i.dataset.tm][i.dataset.k]=i.value.trim()||(i.dataset.k==="nom"?"Commercial "+(+i.dataset.tm+1):"");save();if(i.dataset.k==="nom")render()});
@@ -2629,6 +2630,46 @@ function askPerson(l,id){const p=id?l.people.find(x=>x.id===id):null;const own=(
  ask(p?"Modifier le contact":"Ajouter un contact",`<div class="f"><label for="pdO">Entreprise</label><select id="pdO">${names.map(n=>`<option ${(p?p.o:l.entreprise)===n?"selected":""}>${esc(n)}</option>`).join("")}</select></div><div class="f"><label for="pdN">Nom et prénom</label><input id="pdN" value="${esc(p?.n||"")}"></div><div class="f"><label for="pdF">Fonction</label><input id="pdF" value="${esc(p?.f||"")}"></div><div class="f"><label for="pdT">Téléphone</label><input id="pdT" type="tel" value="${esc(p?.t||"")}"></div><div class="f"><label for="pdE">E-mail</label><input id="pdE" type="email" value="${esc(p?.e||"")}"></div>`,()=>{const n=$("#pdN").value.trim();if(!n){toast("Le nom est obligatoire");return false}const t=$("#pdT").value.trim();if(t&&!/^[+\d][\d\s.]{7,}$/.test(t)){toast("Numéro invalide");return false}const v={n,f:$("#pdF").value.trim(),t,e:$("#pdE").value.trim(),o:$("#pdO").value};if(p)Object.assign(p,v);else{l.people.push({id:rid(),...v,src:"saisie"});log(l,"Contact ajouté : "+n)}save();keepY();toast(p?"Contact modifié":"Contact ajouté")})}
 function askOrg(l){ask("Ajouter une entreprise",`<div class="f"><label for="odN">Nom de l'entreprise</label><input id="odN"></div><div class="f"><label for="odR">Rôle sur le site</label><select id="odR"><option value="a">Autre occupant</option><option value="o">Propriétaire du bâtiment</option></select></div>`,()=>{const n=$("#odN").value.trim();if(!n){toast("Le nom est obligatoire");return false}if($("#odR").value==="a")l.autres.push(n);else l.proprietaire=[l.proprietaire,n].filter(Boolean).join(", ");log(l,"Entreprise ajoutée : "+n);save();keepY();toast("Entreprise ajoutée")})}
 function mkPrincipal(l,id){const p=l.people.find(x=>x.id===id);if(!p)return;const old=l.q.contact?{id:rid(),n:l.q.contact,f:l.q.fonction||"",t:l.q.tel||"",e:l.q.email||"",o:l.entreprise||"",src:"saisie"}:null;l.q.contact=p.n;l.q.fonction=p.f;l.q.tel=p.t;l.q.email=p.e;l.people=l.people.filter(x=>x.id!==id);if(old)l.people.unshift(old);log(l,"Interlocuteur : "+p.n);save();keepY();toast("Interlocuteur mis à jour")}
+/* ---- export tableur (Excel) et envoi par e-mail d'une liste de prospects ---- */
+const XL_SRC="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js",XL_SRI="sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz";
+let XLP=null;
+function xlLib(){if(window.ExcelJS)return Promise.resolve();return XLP||(XLP=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=XL_SRC;s.integrity=XL_SRI;s.crossOrigin="anonymous";s.onload=()=>ok();s.onerror=()=>{XLP=null;ko(new Error("module Excel injoignable, vérifiez la connexion"))};document.head.appendChild(s)}))}
+const telHref=t=>{const d=String(t||"").replace(/\D/g,"");return d.length===10&&d[0]==="0"?"tel:+33"+d.slice(1):d.length>=8?"tel:+"+d.replace(/^00/,""):""};
+const xlName=n=>`PrimeLeads_prospects_${new Date().toISOString().slice(0,10)}_${n}.xlsx`;
+// Personnes d'une fiche : l'interlocuteur d'abord, puis les autres contacts, sans doublon.
+function xlContacts(l){const out=[],seen=new Set(),q=l.q||{},add=(n,f,o,t,e)=>{if(!n&&!t&&!e)return;const k=znorm(n)+"|"+String(t||"").replace(/\D/g,"")+"|"+String(e||"").toLowerCase();if(seen.has(k))return;seen.add(k);out.push({n:n||"",f:f||"",o:o||"",t:t||"",e:e||""})};
+ add(q.contact,q.fonction,l.entreprise,q.tel,q.email);
+ (l.people||[]).forEach(p=>{if(q.contact&&znorm(p.n)===znorm(q.contact)&&!p.t&&!p.e)return;add(p.n,p.f,p.o,p.t,p.e)});return out}
+async function xlBuild(arr){await xlLib();const wb=new ExcelJS.Workbook();wb.creator="PrimeLeads";wb.created=new Date();
+ const NAVY="FF0B192C",LINE="FFDBE3EC",SOFT="FFF4F7FA",LINK="FF24578F",L=[...arr].sort((a,b)=>score(b)-score(a)),tn=S.settings.team;
+ const sheet=(name,cols)=>{const ws=wb.addWorksheet(name,{views:[{state:"frozen",xSplit:1,ySplit:1}],pageSetup:{orientation:"landscape",paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.2,footer:.2}}});
+  ws.columns=cols.map(c=>({header:c[0],key:c[1],width:c[2]}));ws.pageSetup.printTitlesRow="1:1";return ws};
+ const link=(text,href)=>text&&href?{text:String(text),hyperlink:href}:text||"";
+ const dress=ws=>{const nc=ws.columnCount,nr=ws.rowCount;for(let r=1;r<=nr;r++){const row=ws.getRow(r);if(r===1)row.height=28;for(let c=1;c<=nc;c++){const cell=row.getCell(c),lk=cell.value&&cell.value.hyperlink;
+    if(r===1){cell.font={name:"Calibri",size:11,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:NAVY}};cell.alignment={vertical:"middle",wrapText:true}}
+    else{cell.font={name:"Calibri",size:11,bold:c===1,color:{argb:lk?LINK:"FF0B192C"},underline:!!lk};cell.alignment={vertical:"top",wrapText:true};cell.border={bottom:{style:"thin",color:{argb:LINE}}};if(r%2)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:SOFT}}}}}
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:nc}}};
+ const p=sheet("Prospects",[["Entreprise","e",34],["Ville","v",18],["Activité","a",30],["Interlocuteur","c",24],["Fonction","f",22],["Téléphone","t",17],["E-mail","m",30],["Adresse (itinéraire)","adr",38],["Surface m²","s",12],["Hauteur m","h",11],["Fiches CEE","fi",26],["Prime estimée","pr",22],["Priorité %","sc",11],["Statut","st",16],["Rappel","rp",15],["Site web","w",28],["Autres contacts","ac",44],["Propriétaire du bâtiment","po",28],["Assigné à","as",16],["Notes","no",44]]);
+ const k=sheet("Contacts",[["Entreprise","e",34],["Ville","v",18],["Nom","n",26],["Fonction","f",26],["Société","o",30],["Téléphone","t",17],["E-mail","m",32]]);
+ L.forEach(l=>{const q=l.q||{},r=calc(l),cs=xlContacts(l),m=cs[0]||{},ct=(l.enr&&l.enr.ct)||{},tel=m.t||q.tel||ct.tel||"",mail=m.e||q.email||ct.email||"",site=q.site||ct.site||"",adr=[l.adresse,l.cp,villeOf(l)].filter(Boolean).join(" ");
+  p.addRow({e:l.entreprise||"Occupant à identifier",v:villeOf(l),a:typo(l),c:m.n||"",f:m.f||"",t:link(tel,telHref(tel)),m:link(mail,mail?"mailto:"+mail:""),adr:link(adr,adr?"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(adr):""),
+   s:l.surface?+l.surface:"",h:(q.hsp?+q.hsp:l.hauteur?+l.hauteur:"")||"",fi:r.fiches.filter(x=>x.etat!=="ko").map(x=>x.fiche).join(", "),pr:r.hi?`${eur(r.lo)} à ${eur(r.hi)}`:"À qualifier",sc:score(l),st:STATUTS[l.statut]?STATUTS[l.statut][0]:"",rp:l.rappel?dt(l.rappel):"",
+   w:link(site.replace(/^https?:\/\//,"").replace(/\/$/,""),site&&/^https?:\/\//.test(site)?site:site?"https://"+site:""),ac:cs.slice(1).map(x=>[x.n,x.f,x.t,x.e].filter(Boolean).join(" · ")).join("\n"),po:l.proprietaire||"",as:l.asg!=null&&tn[l.asg]?tn[l.asg].nom:"",no:q.notes||""});
+  cs.forEach(x=>k.addRow({e:l.entreprise||"",v:villeOf(l),n:x.n,f:x.f,o:x.o,t:link(x.t,telHref(x.t)),m:link(x.e,x.e?"mailto:"+x.e:"")}))});
+ p.getColumn("s").numFmt="#,##0";dress(p);dress(k);["s","h","sc"].forEach(x=>p.getColumn(x).eachCell((c,r)=>{if(r>1)c.alignment={vertical:"top",horizontal:"center"}}));
+ return new Blob([await wb.xlsx.writeBuffer()],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})}
+function xlSave(blob,name){const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
+async function xlExport(arr){if(!arr.length)return toast("Aucun prospect à exporter");toast("Préparation du tableau…");
+ try{xlSave(await xlBuild(arr),xlName(arr.length));toast(`Tableau Excel téléchargé : ${arr.length} prospect${arr.length>1?"s":""}`)}catch(e){toast("Export impossible : "+(e&&e.message||"erreur"))}}
+// Envoi : le tableau est préparé pendant que la fenêtre est ouverte, pour que le partage parte au clic (exigé par iPad et iPhone).
+function xlMail(arr){if(!arr.length)return toast("Aucun prospect à envoyer");const n=arr.length,name=xlName(n),tm=S.settings.team.filter(u=>u.email);let blob=null,err=null;xlBuild(arr).then(b=>{blob=b;const i=$("#xmI");if(i)i.textContent="Tableau prêt."},e=>{err=e;const i=$("#xmI");if(i)i.textContent="Tableau indisponible : "+(e&&e.message||"erreur")});
+ const subj=`Prospects CEE à contacter (${n})`,body=`Bonjour,\n\nCi-joint ${n} prospect${n>1?"s":""} à contacter, classé${n>1?"s":""} par priorité. Dans le tableau : interlocuteur, téléphone, e-mail et adresse de chaque site. L'onglet « Contacts » liste toutes les personnes connues.\n\n${me().nom}`;
+ ask("Envoyer la liste par e-mail",`<div class="f"><label for="xmTo">Destinataire</label><input id="xmTo" type="email" list="xmL" placeholder="prenom@societe.fr" autocomplete="off"><datalist id="xmL">${tm.map(u=>`<option value="${esc(u.email)}">${esc(u.nom)}</option>`).join("")}</datalist></div>
+  <p class="sm mut" style="margin:0">${n} prospect${n>1?"s":""} dans un tableau Excel. Sur iPad, iPhone et la plupart des ordinateurs récents, le fichier est joint au message. Ailleurs, il est téléchargé et le message s'ouvre : il reste à y glisser le fichier.</p><p class="sm mut" id="xmI" style="margin:6px 0 0">Préparation du tableau…</p>`,()=>{
+  if(err){toast("Export impossible : "+(err.message||"erreur"));return}
+  if(!blob){const i=$("#xmI");if(i)i.textContent="Encore une seconde : le tableau se prépare…";return false}
+  const to=$("#xmTo").value.trim(),file=new File([blob],name,{type:blob.type}),mailto=()=>{xlSave(blob,name);location.href=`mailto:${/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)?to:""}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body+"\n\nPièce jointe à glisser : "+name+" (dans les téléchargements).")}`;toast("Tableau téléchargé : glissez-le dans le message")};
+  if(navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({files:[file],title:subj,text:body}).catch(e=>{if(!e||e.name!=="AbortError")mailto()});else mailto()})}
 function csvOf(arr){const cell=v=>{let s=String(v??"");if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};const tn=S.settings.team;
  const h=["Entreprise","Activité","Adresse","Secteur CEE","Interlocuteur","Fonction","Téléphone","E-mail","Autres contacts","Dirigeant RNE","Propriétaire du bâtiment","Autres occupants","Statut","Rappel","Match %","Surface m²","Hauteur m","Prime basse €","Prime haute €","Assigné à","Ma prospection","Notes"];
  return [h,...arr.map(l=>{const r=calc(l);return[l.entreprise,typo(l),l.adresse+" "+l.cp+" "+l.ville,secteur(l),l.q.contact,l.q.fonction,l.q.tel,l.q.email,(l.people||[]).map(p=>[p.n,p.f,p.o,p.t,p.e].filter(Boolean).join(" / ")).join(" | "),l.dirigeant,l.proprietaire,(l.autres||[]).join(", "),STATUTS[l.statut][0],l.rappel?dt(l.rappel):"",score(l),l.surface,l.hauteur,Math.round(r.lo),Math.round(r.hi),l.asg!=null&&tn[l.asg]?tn[l.asg].nom:"",l.pros?"oui":"",l.q.notes]})].map(r=>r.map(cell).join(";")).join("\n")}
