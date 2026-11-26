@@ -73,7 +73,7 @@ test("interface : démo, fiche, script, note, recherche", { skip: !pw && "playwr
       if (await b.count()) { await b.first().click(); await p.waitForTimeout(200) }
     }
     const txt = await p.locator("#drawer").innerText();
-    if(!process.env.SKIP_P)assert.ok(!/garanti(r|e)? (le versement|la prime)|prime garantie|éligibilité\s*100/i.test(txt), "aucune promesse de prime dans la fiche");
+    assert.ok(!/garanti(r|e)? (le versement|la prime)|prime garantie|éligibilité\s*100/i.test(txt), "aucune promesse de prime dans la fiche");
 
     // nouvelle recherche : « hôtels à Nice »
     await p.keyboard.press("Escape");

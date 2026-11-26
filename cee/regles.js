@@ -291,9 +291,11 @@
 
   /* ---------- Rôles des personnes au registre ---------- */
   // Mandataire légal (peut engager la société) / organe de contrôle (jamais décideur commercial) / autre.
-  function roleDirigeant(qualite) {
+  // nom : facultatif, sert à reconnaître un cabinet d'audit inscrit avec la qualité « Autre ».
+  function roleDirigeant(qualite, nom) {
     const s = String(qualite || "").toLowerCase();
-    if (/commissaire aux comptes|auditeur|conseil de surveillance|censeur|contr[ôo]leur/.test(s)) return "controle";
+    if (/\baudit|commissariat aux comptes|commissaires aux comptes/i.test(String(nom || ""))) return "controle";
+    if (/commissaire aux comptes|audit|conseil de surveillance|censeur|contr[ôo]leur/.test(s)) return "controle";
     if (/pr[ée]sident|directeur g[ée]n[ée]ral|g[ée]rant|directoire|administrateur|repr[ée]sentant|pouvoir/.test(s)) return "legal";
     return "autre";
   }

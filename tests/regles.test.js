@@ -121,6 +121,7 @@ test("rôles : un commissaire aux comptes n'est jamais un décideur", () => {
   assert.strictEqual(CEE.roleDirigeant("Président de SAS"), "legal");
   assert.strictEqual(CEE.roleDirigeant("Gérant"), "legal");
   assert.strictEqual(CEE.roleDirigeant("Autre"), "autre");
+  assert.strictEqual(CEE.roleDirigeant("Autre", "Ernst & Young Audit"), "controle", "cabinet d'audit (STEF)");
 });
 
 test("contacts : numéro partagé ou sans preuve jamais « vérifié »", () => {
