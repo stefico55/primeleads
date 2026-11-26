@@ -102,6 +102,16 @@ test("interface : démo, fiche, script, note, recherche", { skip: !pw && "playwr
     assert.match(mes, /Taux de gain/);
     assert.doesNotMatch(mes, /NaN|undefined|Infinity/);
 
+    // « Ne plus appeler » : la fiche quitte la liste (archivée, journal conservé)
+    await p.click('.nav button[data-v="pros"]');
+    await p.waitForSelector("tr[data-id]");
+    const avant = await p.locator("tr[data-id]").count();
+    await p.locator("tr[data-id]").nth(2).click();
+    await p.click('#drawer [data-tab="appel"]');
+    await p.click('#drawer [data-out="stop"]');
+    await p.click("#dlgOk");
+    await p.waitForFunction(n => document.querySelectorAll("tr[data-id]").length === n - 1, avant, { timeout: 5000 });
+
     // nouvelle recherche : « hôtels à Nice »
     await p.keyboard.press("Escape");
     await p.click('.nav button[data-v="rech"]');

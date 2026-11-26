@@ -2020,7 +2020,7 @@ const PCOL={new:"#8a96a4",email:"#24578f",rappel:"#d08a0c",rdv:"#4f9a24",visite:
 // Mesure : uniquement les issues d'appel saisies. Pas de taux sans dénominateur, pas d'estimation.
 let MESP="30";
 function opPrinc(l){const f=calc(l).fiches.find(x=>x.etat!=="ko"&&!x.excl);return f?f.fiche:"Aucune opération identifiée"}
-function vMes(){const d=MESP==="all"?null:new Date(Date.now()-(+MESP)*864e5).toISOString(),s=MES.stats(S.leads,{op:opPrinc,zone:l=>{const z=CEE.zoneDe(l.cp),dp=depOf(l);return dp?(dp+(z?" · "+z:"")):null},depuis:d});
+function vMes(){const d=MESP==="all"?null:new Date(Date.now()-(+MESP)*864e5).toISOString(),s=MES.stats(S.leads.concat(S.arch||[]),{op:opPrinc,zone:l=>{const z=CEE.zoneDe(l.cp),dp=depOf(l);return dp?(dp+(z?" · "+z:"")):null},depuis:d});
  const pc=v=>v==null?'<span class="na" title="Pas assez de données">--</span>':v+" %",T=s.total;
  const rows=(arr)=>arr.length?arr.map(x=>`<tr><td>${esc(x.k)}</td><td class="num">${x.appeles}</td><td class="num">${x.tentatives}</td><td class="num">${x.joints}</td><td class="num">${pc(x.tJoignable)}</td><td class="num">${x.rdv}</td><td class="num">${pc(x.tRdv)}</td><td class="num">${x.visites}</td><td class="num">${x.devis}</td><td class="num">${x.gagnes} / ${x.perdus}</td><td class="num">${pc(x.tGagne)}</td></tr>`).join(""):`<tr><td colspan="11" class="mut">Aucune issue d'appel saisie sur la période.</td></tr>`;
  const head=k=>`<thead><tr><th>${k}</th><th class="num" title="Fiches avec au moins une issue">Fiches appelées</th><th class="num">Appels</th><th class="num" title="Interlocuteur trouvé, ou échange ayant produit une qualification ou une suite">Conversations</th><th class="num" title="Conversations ÷ fiches appelées">Joignabilité</th><th class="num">Visites planifiées</th><th class="num" title="Visites planifiées ÷ conversations">Taux</th><th class="num">Visites réalisées</th><th class="num">Devis</th><th class="num">Gagnés / perdus</th><th class="num" title="Gagnés ÷ (gagnés + perdus)">Taux de gain</th></tr></thead>`;
@@ -2530,7 +2530,7 @@ let rLast=0;async function rGet(p){for(let i=0;i<4;i++){const w=Math.max(0,rLast
  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);const r=await fetch("https://recherche-entreprises.api.gouv.fr/search?"+new URLSearchParams(p),{signal:c.signal});clearTimeout(t);
   if(r.status===429){await new Promise(x=>setTimeout(x,1000*(i+1)));continue}if(!r.ok)throw new Error("Registre indisponible ("+r.status+")");return await r.json()}catch(e){if(i===3)throw e}}
  throw new Error("Registre saturé, réessaie dans une minute")}
-function rKnown(){const k=new Set();S.leads.forEach(l=>{k.add(String(l.siret||l.id))});(S.stop||[]).forEach(x=>k.add(String(x.siret||x.id||x)));return k}
+function rKnown(){const k=new Set();S.leads.forEach(l=>{k.add(String(l.siret||l.id))});(S.stop||[]).forEach(x=>k.add(String(x.siret||x.id||x)));(S.arch||[]).forEach(l=>k.add(String(l.siret||l.id)));return k}
 function rLead(r,e,s){const d=(r.dirigeants||[]).find(x=>x.type_dirigeant==="personne physique"&&CEE.roleDirigeant(x.qualite,x.denomination||x.nom)!=="controle"),dn=d?[String(d.prenoms||"").split(",")[0].trim(),d.nom].filter(Boolean).join(" "):"";
  const tr=e.tranche_effectif_salarie||r.tranche_effectif_salarie,big=["32","41","42","51","52","53"].includes(tr)?15:["21","22","31"].includes(tr)?10:0;
  return{id:String(e.siret),adresse:e.adresse?String(e.adresse).replace(/\s+\d{5}\s+.*$/,""):"",cp:e.code_postal||"",ville:e.libelle_commune||"",entreprise:r.nom_complet||r.nom_raison_sociale||"",autres:e.nom_commercial&&e.nom_commercial!==r.nom_complet?[e.nom_commercial]:[],naf:e.activite_principale||r.activite_principale||"",siret:String(e.siret),
@@ -2965,7 +2965,7 @@ function outcome(l,k){const I=MES.ISSUES[k]||{t:k},prep=prepS(l);
  else if(k==="visite"||k==="devis"||k==="gagne"||k==="perdu"){const ph={visite:"Relevés faits, puissances notées…",devis:"Montant, opération, référence…",gagne:"Opération, montant signé…",perdu:"Motif : concurrent, prix, non éligible…"}[k];
   ask(I.t,`<div class="f"><label for="oN">Précision</label><input id="oN" placeholder="${ph}"></div>`,()=>{const v=$("#oN").value.trim();done(I.statut,I.t+(v?" : "+v:""),v?{n:v}:null)})}
  else if(k==="bad")done("bad","Mauvais numéro");else if(k==="no")done("no","Pas intéressé");
- else if(k==="stop")ask("Ne plus appeler ?",`<p>Le prospect sera retiré de la liste et ne sera plus proposé.</p>`,()=>{S.leads=S.leads.filter(x=>x.id!==l.id);(S.stop=S.stop||[]).push({id:l.id,t:now(),by:me().nom,uid:S.user});save();closeLead();toast("Retiré de la prospection")})}
+ else if(k==="stop")ask("Ne plus appeler ?",`<p>Le prospect sera retiré de la liste et ne sera plus proposé.</p>`,()=>{const st={t:now(),by:me().nom,uid:S.user};l.stop=st;log(l,"Ne plus appeler (opposition enregistrée)","appel",{o:"stop"});S.leads=S.leads.filter(x=>x.id!==l.id);(S.arch=S.arch||[]).push(l);(S.stop=S.stop||[]).push(Object.assign({id:l.id,siret:l.siret||null},st));save();closeLead();toast("Retiré de la prospection")})}
 (()=>{const lg=$(".logo");if(!lg)return;lg.setAttribute("role","link");lg.setAttribute("aria-label","PrimeLeads, retour à la liste des bâtiments");lg.tabIndex=0;lg.title="Retour à la liste des bâtiments";
  const go=()=>{if(typeof closeAgent==="function"&&AG.open)closeAgent();V="pros";render()};lg.onclick=go;lg.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}})();
 $$(".nav button").forEach(b=>b.onclick=()=>{if(b.dataset.v==="agent"){openAgent();return}V=b.dataset.v;render()});
@@ -2981,7 +2981,7 @@ CL.push=()=>{clearTimeout(CL.t);CL.t=setTimeout(clSync,700)};
 function clBadge(st){let b=$("#clb");if(!b){b=document.createElement("div");b.id="clb";const u=$("#user");u.parentElement.appendChild(b);b.onclick=e=>{if(e.target.id==="clo")clOut()}}
  b.innerHTML=CL.on?`<span class="cld ${st||"ok"}" aria-hidden="true"></span><span class="clt">${st==="sync"?"Enregistrement…":st==="err"?"Non enregistré — nouvelle tentative":"Enregistré en ligne"} · ${esc(CL.email||"")}</span> <button class="lnk" id="clo" type="button">Se déconnecter</button>`:""}
 async function clSync(){if(!CL.on)return;if(CL.busy){CL.again=true;return}CL.busy=true;clBadge("sync");
- try{const cur=new Map(S.leads.map(l=>[String(l.id),JSON.stringify(l)])),now=new Date().toISOString();
+ try{const cur=new Map(S.leads.concat(S.arch||[]).map(l=>[String(l.id),JSON.stringify(l)])),now=new Date().toISOString();
   const up=[...cur].filter(([id,j])=>CL.known.get(id)!==j).map(([id,j])=>{const d=JSON.parse(j);return{org_id:CL.org,ref:id,data:d,statut:d.statut||"new",updated_by:CL.uid,updated_at:now}});
   for(let i=0;i<up.length;i+=200){const {error}=await CL.sb.from("batiments").upsert(up.slice(i,i+200),{onConflict:"org_id,ref"});if(error)throw error}
   up.forEach(r=>CL.known.set(r.ref,cur.get(r.ref)));
@@ -2993,7 +2993,7 @@ async function clSync(){if(!CL.on)return;if(CL.busy){CL.again=true;return}CL.bus
  finally{CL.busy=false;if(CL.again){CL.again=false;CL.push()}}}
 async function clLoad(){const [b,r]=await Promise.all([CL.sb.from("batiments").select("ref,data").eq("org_id",CL.org).limit(5000),CL.sb.from("reglages").select("value").eq("org_id",CL.org).maybeSingle()]);
  if(b.error)throw b.error;if(r.error)throw r.error;
- S.leads=b.data.map(x=>x.data);CL.known=new Map(b.data.map(x=>[String(x.ref),JSON.stringify(x.data)]));
+ S.leads=b.data.map(x=>x.data).filter(d=>!d.stop);S.arch=b.data.map(x=>x.data).filter(d=>d.stop);CL.known=new Map(b.data.map(x=>[String(x.ref),JSON.stringify(x.data)]));
  if(r.data&&r.data.value){Object.assign(S.settings,r.data.value.settings||{});S.stop=r.data.value.stop||S.stop||[];CL.regJ=JSON.stringify({settings:S.settings,stop:S.stop||[]})}
  S.settings.prixBas??=6.5;S.settings.prixHaut??=8.7;S.settings.wBas??=30;S.settings.wHaut??=60;S.settings.validite??=30;S.settings.cDes??=2500;S.settings.cHp??=150;S.settings.cPac??=900;S.settings.pGaz??=0.09;S.settings.pElec??=0.17;
  if(!S.settings.team)S.settings.team=[{nom:CL.nom||"Commercial 1",tel:"",email:CL.email}];
