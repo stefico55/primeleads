@@ -75,6 +75,33 @@ test("interface : démo, fiche, script, note, recherche", { skip: !pw && "playwr
     const txt = await p.locator("#drawer").innerText();
     assert.ok(!/garanti(r|e)? (le versement|la prime)|prime garantie|éligibilité\s*100/i.test(txt), "aucune promesse de prime dans la fiche");
 
+    // issue d'appel structurée → journal attribué et daté → onglet Mesure
+    await p.click('#drawer [data-tab="appel"]');
+    await p.click('#drawer [data-out="joint"]');
+    await p.fill("#oN", "M. Test, responsable maintenance");
+    await p.click("#dlgOk");
+    await p.click('#drawer [data-tab="appel"]').catch(() => {});
+    await p.click('#drawer [data-out="crit_ok"]');
+    await p.selectOption("#oC", "hsp");
+    await p.fill("#oN", "9 m");
+    await p.click("#dlgOk");
+    const hist = p.locator('#drawer [data-tab="hist"]');
+    if (await hist.count()) {
+      await hist.first().click();
+      const h = await p.locator("#drawer").innerText();
+      assert.match(h, /Interlocuteur trouvé/);
+      assert.match(h, /Critère confirmé : Hauteur sous plafond \(9 m\)/);
+    }
+    await p.keyboard.press("Escape");
+    await p.click('.nav button[data-v="mes"]');
+    await p.waitForSelector("#app h2:has-text('Mesure')");
+    const mes = await p.locator("#app").innerText();
+    assert.match(mes, /Fiches appelées\s*1\b/, "une fiche appelée");
+    assert.match(mes, /Joignabilité\s*100 %/);
+    assert.match(mes, /Critères confirmés \/ exclus\s*1 \/ 0/);
+    assert.match(mes, /Taux de gain/);
+    assert.doesNotMatch(mes, /NaN|undefined|Infinity/);
+
     // nouvelle recherche : « hôtels à Nice »
     await p.keyboard.press("Escape");
     await p.click('.nav button[data-v="rech"]');

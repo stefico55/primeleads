@@ -4,6 +4,6 @@
   "description": "PrimeLeads : application statique (index.html) et fonctions Vercel (api/). Aucune étape de build.",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check cee/regles.js && node tests/check-inline.js"
+    "check": "node --check cee/regles.js && node --check cee/mesure.js && node tests/check-inline.js"
   }
 }
