@@ -308,8 +308,9 @@
     if (c.invalide) return { k: "invalide", t: "Invalide" };
     if (c.partage) return { k: "partage", t: "Partagé avec d'autres sociétés" };
     if (c.saisi) return { k: "saisi", t: c.direct ? "Ligne directe (saisie)" : "Saisi par un commercial" };
-    if (c.preuve === "siren" && c.url) return { k: "verifie", t: "Vérifié (SIREN sur la page source)" };
-    if (c.url) return { k: "probable", t: "Probable (trouvé sur le web)" };
+    if (c.preuve === "siren" && c.url) return { k: "verifie", t: "Vérifié (site officiel portant le SIREN)" };
+    if (c.preuve === "site") return { k: "probable", t: "Probable (site de la société, sans SIREN)" };
+    if (c.preuve === "recoupement") return { k: "probable", t: "Probable (recoupé sur plusieurs sources)" };
     return { k: "non_verifie", t: "Non vérifié" };
   }
   // Numéros présents sur des fiches de sociétés différentes (SIREN distincts).

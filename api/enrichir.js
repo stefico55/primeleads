@@ -49,12 +49,16 @@ async function core(p){
  // un site au nom exact de la société, même vide, est retenu si au moins un annuaire ou un résultat le cite
  {const corpus=(snipAll+" "+pages.map(x=>x.txt||"").join(" ")).toLowerCase();pages.forEach(pg=>{if(pg.pend){if(corpus.includes(pg.host.toLowerCase()))pg.own=true;else pg.prob=true;pg.pend=false}});pages=pages.filter(x=>!x.pend)}
  snippets.forEach(s=>pages.push({host:s.host,site:null,own:false,ident:false,ph:L.phones(s.txt),em:L.emails(s.txt),social:{},snip:true}));
- const vote=sel=>{const m=new Map();pages.forEach(pg=>{const seen=new Set();sel(pg).forEach((v,k)=>{if(seen.has(v))return;seen.add(v);const e=m.get(v)||{n:0,own:false,r:k};e.n++;if(pg.own)e.own=true;e.r=Math.min(e.r,k);m.set(v,e)})});return [...m.entries()].sort((a,b)=>(b[1].own-a[1].own)||(b[1].n-a[1].n)||(a[1].r-b[1].r)).map(x=>({v:x[0],n:x[1].n,own:x[1].own}))};
+ // Chaque valeur garde sa preuve : pages où elle figure, page officielle de la société, SIREN présent sur cette page.
+ const vote=sel=>{const m=new Map();pages.forEach(pg=>{const seen=new Set();sel(pg).forEach((v,k)=>{if(seen.has(v))return;seen.add(v);const e=m.get(v)||{n:0,own:false,id:false,r:k,h:[],url:null};e.n++;if(pg.own){e.own=true;if(pg.ident){e.id=true;e.url=e.url||pg.site}}if(!e.h.includes(pg.host))e.h.push(pg.host);e.r=Math.min(e.r,k);m.set(v,e)})});return [...m.entries()].sort((a,b)=>(b[1].own-a[1].own)||(b[1].n-a[1].n)||(a[1].r-b[1].r)).map(x=>({v:x[0],n:x[1].n,own:x[1].own,id:x[1].id,h:x[1].h.slice(0,4),url:x[1].url}))};
+ const det=a=>a.slice(0,4).map(x=>({v:x.v,n:x.n,own:x.own,preuve:x.id?"siren":x.own?"site":x.n>=2?"recoupement":"source unique",sources:x.h,url:x.url||null}));
  const tels=vote(pg=>pg.ph.filter(x=>!x.mobile||pg.own).map(x=>x.v)),mails=vote(pg=>pg.em);
  const ownPg=pages.find(x=>x.own),probPg=ownPg?null:pages.find(x=>x.prob),src=[];if(ownPg)src.push("Site de l'entreprise");else if(probPg)src.push("Site probable");const dirs=[...new Set(pages.filter(x=>!x.own&&!x.prob).map(x=>x.host))].slice(0,4);if(dirs.length)src.push("Recoupement : "+dirs.join(", "));
- const strong=a=>a&&(a.own||a.n>=2);
+ // « verifie » seulement avec une preuve traçable : la valeur figure sur la page officielle de la société, qui porte son SIREN.
+ const proof=a=>a&&a.own&&a.id;
  const out={tel:tels[0]?tels[0].v:null,tels:tels.slice(0,4).map(x=>x.v),email:mails[0]?mails[0].v:null,emails:mails.slice(0,4).map(x=>x.v),site:ownPg?ownPg.site:probPg?probPg.site:null,siteFiab:ownPg?"verifie":probPg?"probable":null,social:ownPg?ownPg.social:probPg?probPg.social:{},src,rl,
-  fiab:(tels.length||mails.length||ownPg||probPg)?((strong(tels[0])||strong(mails[0])||(ownPg&&ownPg.ident))?"verifie":"probable"):"aucune",cle:!!key,ms:Date.now()-t0};
+  telsD:det(tels),emailsD:det(mails),
+  fiab:(tels.length||mails.length||ownPg||probPg)?((proof(tels[0])||proof(mails[0]))?"verifie":"probable"):"aucune",cle:!!key,ms:Date.now()-t0};
  if(p.nosearch)out.note="Recherche web non lancée (score bas) : seuls les domaines devinés sont testés";else if(!key)out.note="BRAVE_API_KEY absente : seuls les domaines devinés sont testés";if(sErr)out.sErr=sErr;if(p.debug)out.dbg=DBG.slice(0,40);
  console.log(JSON.stringify({enrichir:nom,cp:q.cp,mode:p.nosearch?"devine":key?"recherche":"sans-cle",site:out.site,siteFiab:out.siteFiab,fiab:out.fiab,pages:pages.length,ms:out.ms,sErr}));
  return out}

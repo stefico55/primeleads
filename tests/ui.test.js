@@ -88,6 +88,23 @@ test("interface : démo, fiche, script, note, recherche", { skip: !pw && "playwr
     assert.deepStrictEqual(alert, [], "pas d'erreur au comptage");
     const app = await p.locator("#app").innerText();
     assert.match(app, /120\s+sociétés? au registre/, "le comptage du registre est affiché");
+    assert.match(app, /Filtres appliqués/, "les filtres sont récapitulés avant la recherche");
+    assert.match(app, /par défaut/, "les valeurs par défaut sont signalées");
+    assert.match(app, /Le nombre final sera plus bas/, "le comptage n'est pas présenté comme le résultat final");
+
+    // ville ambiguë : demande de précision, puis « Saint-Denis (93) » est accepté
+    await p.click('[data-r="back"]');
+    await p.fill("#rZ", "Saint-Denis");
+    await p.click('[data-r="prev"]');
+    await p.waitForFunction(() => /plusieurs communes/.test(document.getElementById("app").innerText), null, { timeout: 10000 });
+    const amb = await p.locator("#app").innerText();
+    assert.match(amb, /Saint-Denis \(93\)/);
+    assert.match(amb, /Saint-Denis \(974\)/);
+    assert.doesNotMatch(amb, /sociétés? au registre/, "pas de comptage tant que la zone est ambiguë");
+    await p.fill("#rZ", "Saint-Denis (93)");
+    await p.click('[data-r="prev"]');
+    await p.waitForFunction(() => /au registre/.test(document.getElementById("app").innerText), null, { timeout: 10000 });
+    assert.doesNotMatch(await p.locator("#app").innerText(), /plusieurs communes/);
 
     assert.deepStrictEqual(errors, [], "aucune erreur JavaScript");
   } finally { await browser.close(); srv.close() }

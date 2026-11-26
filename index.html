@@ -2005,7 +2005,7 @@ function vPros(){
  const rows=L.map(l=>{const r=calc(l),st=STATUTS[l.statut],sc=score(l);
   const fc=r.fiches.map(x=>`<span class="fc ${x.etat==="ok"?"":x.etat==="ko"||x.excl?"k":"w"}" title="${esc((x.msgs.concat(x.reserves||[])).join(" · "))}">${x.fiche}</span>`).join(""),el=CEE.eligibilite(r);
   return `<tr data-id="${esc(l.id)}" class="${sel===l.id?"on":""}${SEL.has(l.id)?" ck-on":""}"><td class="ck"><input type="checkbox" data-ck="${esc(l.id)}" ${SEL.has(l.id)?"checked":""} aria-label="Sélectionner ${esc(l.entreprise||"ce bâtiment")}"></td><td><span class="mt ${sc>=70?"h":sc>=40?"m":""}" title="Pertinence commerciale (pas l'éligibilité)">${sc} %</span></td>
-  <td><button class="nm" data-open="${esc(l.id)}">${esc(l.entreprise||"Occupant à identifier")}</button><div class="sm mut">${esc(typo(l))} · ${esc(l.adresse)}</div><div class="sm" style="font-weight:600">${esc(villeOf(l))}${depOf(l)?` (${depOf(l)})`:""}</div><span class="tag ${secteur(l)==="Industrie"?"g":"b"}">${secteur(l)}</span>${froidP(l)?'<span class="tag b">Froid</span>':""}${nrjOf(l)==="gaz"?'<span class="tag a">Gaz</span>':nrjOf(l)==="elec"?'<span class="tag e">Électrique</span>':""}${l.q.statutOcc==="proprio"?'<span class="tag g">Propriétaire</span>':""}${l.pros?'<span class="tag g">Ma prospection</span>':""}</td>
+  <td><button class="nm" data-open="${esc(l.id)}">${esc(l.entreprise||"Occupant à identifier")}</button><div class="sm mut">${esc(typo(l))} · ${esc(l.adresse)}</div><div class="sm" style="font-weight:600">${esc(villeOf(l))}${depOf(l)?` (${depOf(l)})`:""}</div><span class="tag ${secteur(l)==="Industrie"?"g":"b"}">${secteur(l)}</span>${froidP(l)?'<span class="tag b">Froid</span>':""}${nrjOf(l)==="gaz"?'<span class="tag a">Gaz</span>':nrjOf(l)==="elec"?'<span class="tag e">Électrique</span>':""}${l.q.statutOcc==="proprio"?'<span class="tag g">Propriétaire</span>':""}${l.bd&&l.bd.m==="proche"?'<span class="tag a" title="Rattaché par proximité : surface et hauteur viennent d\'un bâtiment voisin, à confirmer sur place">Bâtiment voisin</span>':""}${l.pros?'<span class="tag g">Ma prospection</span>':""}</td>
   <td class="dcl loc">${dcell(l)}</td>
   <td class="prm"><div class="lb">Prime CEE ${r.conditionnel?"conditionnelle":"indicative"}</div><div class="pr ${r.hi?"":"q"}">${r.hi?`${eur(r.lo)} à ${eur(r.hi)}`:"À qualifier"}</div><div class="el ${EL_C[el.k]}">${esc(el.t)}</div>${fc}</td>
   <td class="num">${l.surface?nf(l.surface)+" m²":'<span class="na">--</span>'}</td><td class="num loc loc2">${Number(l.q.hsp||l.hauteur)?nf(Number(l.q.hsp||l.hauteur))+" m":'<span class="na">--</span>'}</td><td class="loc">${dpeOf(l)?`<span class="dpe d${dpeOf(l)}">${dpeOf(l)}</span>`:'<span class="na">--</span>'}</td><td class="num loc loc2">${l.conso?nf(l.conso)+" MWh":'<span class="na">--</span>'}</td>
@@ -2082,6 +2082,7 @@ function batKnown(l){const bd=l.bd||{},it=[];
 function tEnt(l){const site=l.q.site||"";const g=`https://www.google.com/search?q=${encodeURIComponent((l.entreprise||"")+" "+(villeOf(l)||""))}`,pap=l.siret?`https://www.pappers.fr/entreprise/${l.siret.slice(0,9)}`:"";
  const left=`<section class="card pad ctc"><div class="chd"><h3>Interlocuteur</h3><div class="acts"><button class="btn s p" data-qa="call">${ICO.tel}${l.q.tel?esc(l.q.tel):"Appeler"}</button><button class="btn s" data-qa="mail">${ICO.mail}E-mail</button><button class="btn s" data-qa="rappel">${ICO.hist}Rappel</button></div></div>
  <div class="g2">${fld(l,"contact","Nom et prénom")}${fld(l,"fonction","Fonction")}</div><div class="g2">${fld(l,"tel","Téléphone direct ou standard","tel")}${fld(l,"email","E-mail professionnel","email")}</div>
+ ${l.q.tel?`<div class="g2">${sel2(l,"telType","Type de ligne",[["","— à préciser —"],["standard","Standard"],["direct","Ligne directe de l'interlocuteur"],["invalide","Numéro invalide"]])}<div class="xs mut" style="align-self:end;padding-bottom:12px">${telInfo(l)}</div></div>`:""}
  <div class="g2">${sel2(l,"statutOcc","Propriétaire ou locataire",[["","—"],["proprio","Propriétaire occupant"],["locataire","Locataire"]])}${sel2(l,"enedis","Accord données Enedis",[["","—"],["oui","Oui, mandat à envoyer"],["non","Non"]])}</div>
  <p class="xs mut" style="margin:0">${l.q.contactSrc==="RNE"?`Nom et fonction préremplis depuis le registre officiel (mandataire légal, pas forcément le décideur travaux) : à confirmer à l'appel.`:`Registre : ${dirSeed(l)}.`}${l.q.tel?"":" Téléphone : voir « Fiche enrichie » ou saisie."}</p></section>
  <section class="card pad bat"><div class="chd"><h3>Bâtiment</h3><span class="xs mut">recalcul en direct</span></div>
@@ -2134,8 +2135,8 @@ async function contacts(l,e,guess){const nom=(e.ent&&e.ent.nom)||l.entreprise;if
  let r=cache.get(key);if(!r){await slot();try{const c=new AbortController(),t=setTimeout(()=>c.abort(),32000);
   const x=await fetch("/api/enrichir",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,adresse:l.adresse||"",lat:l.lat,lng:l.lng,site:l.q.site||"",nosearch:!!guess}),signal:c.signal});clearTimeout(t);
   if(!x.ok)return false;r=await x.json();if(!r||r.err||r.retry)return false}catch(err){return false}if(r.cle!==false)cache.set(key,r)}
- const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,r5:true,t:now()};
- if(pv&&guess&&!pv.g){["tel","email","tels","emails","fiab","src"].forEach(k=>{const v=e.ct[k];if(!v||(Array.isArray(v)&&!v.length)||v==="aucune")e.ct[k]=pv[k]});e.ct.cle=pv.cle;e.ct.g=false}
+ const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],telsD:r.telsD||[],email:r.email||null,emails:r.emails||[],emailsD:r.emailsD||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,r5:true,t:now()};
+ if(pv&&guess&&!pv.g){["tel","email","tels","emails","telsD","emailsD","fiab","src"].forEach(k=>{const v=e.ct[k];if(!v||(Array.isArray(v)&&!v.length)||v==="aucune")e.ct[k]=pv[k]});e.ct.cle=pv.cle;e.ct.g=false}
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 const nz2=0;
 function fill(l){const E=l.enr&&l.enr.ent;const d=E&&(E.dir||[]).find(x=>CEE.roleDirigeant(x.f,x.n)!=="controle");if(!d)return;l.q=l.q||{};if(!l.q.contact){l.q.contact=d.n;if(!l.q.fonction&&d.f)l.q.fonction=d.f;l.q.contactSrc="RNE"}}
@@ -2190,15 +2191,27 @@ function tEnr(l){const e=l.enr,b=ENR.busy.has(l.id),A=s=>`https://annuaire-entre
  ${v&&(v.liste.length||v.total>1)?`<details style="margin-top:8px"><summary class="sm" style="cursor:pointer"><b>${v.total} société${v.total>1?"s":""} domiciliée${v.total>1?"s":""} à cette adresse</b>${v.total>15?" · site multi-occupants (marché, zone, centre d'affaires)":" · locataires probables"}</summary>
   <div class="xs" style="margin-top:6px">${v.liste.map(x=>`<div>${x.sci?'<span class="tag a">SCI / foncière</span> ':""}<a href="${A(x.siren)}" target="_blank" rel="noopener">${esc(x.nom)}</a> · NAF ${esc(x.naf||"")}${x.eff?" · "+esc(x.eff)+" sal.":""}</div>`).join("")}${v.total>v.liste.length?`<div class="mut">${v.liste.length?"… et ":""}${v.total-v.liste.length} autre${v.total-v.liste.length>1?"s":""} société${v.total-v.liste.length>1?"s":""} au registre à cette adresse</div>`:""}</div></details>`:""}
  ${tCt(l,e)}</section>`}
+// Coordonnées : chaque numéro et e-mail porte sa source, sa date, son statut et l'alerte s'il est partagé avec d'autres sociétés.
+const CT_C={verifie:"g",probable:"b",non_verifie:"",saisi:"b",partage:"r",invalide:"r",absent:""};
+function telInfo(l){const q=l.q,n=CEE.telNorm(q.tel),ct=(l.enr&&l.enr.ct)||{},sh=n&&CEE.telsPartages(S.leads).get(n),autres=sh?sh.filter(x=>x!==l.entreprise):[],qd=(l.qd||{}).tel;
+ const it=ctItems(l,ct,"tel").find(x=>CEE.telNorm(x.v)===n);
+ const st=q.telType==="invalide"?CEE.statutContact({v:q.tel,invalide:true}):autres.length?CEE.statutContact({v:q.tel,partage:true}):q.telType?CEE.statutContact({v:q.tel,saisi:true,direct:q.telType==="direct"}):it?it.st:CEE.statutContact({v:q.tel,saisi:!!qd});
+ const src=it&&!qd?"repris de la recherche web du "+(dJ(ct.t)||"—"):qd?"saisi par "+esc(qd.by)+" le "+dJ(qd.t):"origine non tracée (fichier initial)";
+ return `<span class="tag ${CT_C[st.k]}">${esc(st.t)}</span> ${src}${autres.length?` · <b style="color:var(--red)">numéro aussi sur la fiche de ${esc(autres.join(", "))}</b>`:""}`}
+function ctItems(l,c,kind){const D=(c[kind+"sD"]||[]),L=(c[kind+"s"]&&c[kind+"s"].length?c[kind+"s"]:c[kind]?[c[kind]]:[]),sh=kind==="tel"?CEE.telsPartages(S.leads):null;
+ return L.map(v=>{const d=D.find(x=>x.v===v)||{},n=kind==="tel"?CEE.telNorm(v):"",autres=sh&&n&&sh.get(n)?sh.get(n).filter(x=>x!==l.entreprise):[];
+  const st=CEE.statutContact({v,preuve:d.preuve,url:d.url,partage:autres.length>0});return{v,d,st,autres}})}
+function ctLine(it,kind,date){const lk=kind==="tel"?`<a href="tel:${esc(it.v.replace(/\s/g,""))}">${esc(it.v)}</a>`:`<a href="mailto:${esc(it.v)}">${esc(it.v)}</a>`;
+ const src=it.d.sources&&it.d.sources.length?it.d.sources.join(", "):"source non détaillée (recherche antérieure)";
+ return `<div style="margin:3px 0">${lk} <span class="tag ${CT_C[it.st.k]}">${esc(it.st.t)}</span><div class="xs mut">Source : ${esc(src)}${date?" · "+dJ(date):""}${it.autres.length?` · <b style="color:var(--red)">aussi sur la fiche de ${esc(it.autres.join(", "))}</b>`:""}</div></div>`}
 function tCt(l,e){const c=e.ct,hr=u=>/^https?:/.test(u)?u:"https://"+u,lk=(h,t)=>`<a href="${esc(h)}" target="_blank" rel="noopener">${esc(t)}</a>`;
- if(!c)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : ${(l.score||0)>=40?"recherche en attente.":"non recherchées automatiquement (score inférieur à 40) : clique sur Actualiser pour les chercher."}</p>`;
- const any=c.tel||c.email||c.site;if(!any)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : ${c.g?"seuls les sites devinés à partir du nom ont été testés (score inférieur à 40) : clique sur Actualiser pour lancer la recherche web.":c.cle===false?"recherche web non activée (clé de recherche à brancher), seuls les sites devinés ont été testés.":"aucun site ni téléphone public trouvé pour cette société."} Les champs restent à saisir à la main (Interlocuteur).</p>`;
- const sc=c.social||{};
- return `<h4 class="sh" style="margin-top:10px">Coordonnées trouvées <span class="tag ${c.fiab==="verifie"?"g":""}">${c.fiab==="verifie"?"Vérifié (SIREN sur le site)":"À confirmer"}</span></h4>
- <div class="xs" style="line-height:1.7">${c.tels&&c.tels.length?"Tél. "+c.tels.map(t=>`<a href="tel:${esc(t.replace(/\s/g,""))}">${esc(t)}</a>`).join(" · "):c.tel?`Tél. <a href="tel:${esc(c.tel.replace(/\s/g,""))}">${esc(c.tel)}</a>`:""}
- ${c.emails&&c.emails.length?"<br>E-mail "+c.emails.map(m=>lk("mailto:"+m,m)).join(" · "):c.email?"<br>E-mail "+lk("mailto:"+c.email,c.email):""}
- ${c.site?"<br>Site "+lk(hr(c.site),c.site.replace(/^https?:\/\//,""))+(c.siteFiab==="probable"?' <span class="tag">Probable</span>':c.siteFiab==="verifie"?' <span class="tag g">Vérifié</span>':""):""}${sc.linkedin?" · "+lk(sc.linkedin,"LinkedIn"):""}${sc.facebook?" · "+lk(sc.facebook,"Facebook"):""}
- <br><span class="mut">Sources : ${esc((c.src||[]).join(", ")||"web")}. Les champs vides de l'interlocuteur ont été préremplis.</span></div>`}
+ if(!c)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : ${(l.score||0)>=40?"recherche en attente.":"non recherchées automatiquement (pertinence inférieure à 40) : clique sur Actualiser pour les chercher."}</p>`;
+ const any=c.tel||c.email||c.site;if(!any)return `<p class="xs mut" style="margin:8px 0 0">Coordonnées : ${c.g?"seuls les sites devinés à partir du nom ont été testés (pertinence inférieure à 40) : clique sur Actualiser pour lancer la recherche web.":c.cle===false?"recherche web non activée (clé de recherche à brancher), seuls les sites devinés ont été testés.":"aucun site ni téléphone public trouvé pour cette société."} Les champs restent à saisir à la main (Interlocuteur).</p>`;
+ const sc=c.social||{},T=ctItems(l,c,"tel"),M=ctItems(l,c,"email");
+ return `<h4 class="sh" style="margin-top:10px">Coordonnées trouvées</h4>
+ <div class="xs" style="line-height:1.5">${T.length?"<b>Téléphones</b>"+T.map(x=>ctLine(x,"tel",c.t)).join(""):""}${M.length?"<b>E-mails</b>"+M.map(x=>ctLine(x,"email",c.t)).join(""):""}
+ ${c.site?"<b>Site</b> "+lk(hr(c.site),c.site.replace(/^https?:\/\//,""))+(c.siteFiab==="probable"?' <span class="tag">Probable</span>':c.siteFiab==="verifie"?' <span class="tag b">Site de la société</span>':""):""}${sc.linkedin?" · "+lk(sc.linkedin,"LinkedIn"):""}${sc.facebook?" · "+lk(sc.facebook,"Facebook"):""}
+ <br><span class="mut">Recherche du ${dJ(c.t)||"—"} · ${esc((c.src||[]).join(", ")||"web")}. « Vérifié » exige que le numéro figure sur le site officiel de la société avec son SIREN ; un numéro de standard reste un standard tant qu'un commercial n'a pas confirmé une ligne directe.</span></div>`}
 function mails(l){const u=me(),c=l.q.contact?l.q.contact.trim():"",civ=c?`Bonjour ${c},`:"Bonjour,",ind=secteur(l)==="Industrie",fs=CEE.froidStatut(l),fr=fs==="confirme",vil=villeOf(l),r=calc(l),dx=r.fiches.find(f=>/BA-110|TH-142/.test(f.fiche)),haut=!(dx&&dx.excl)&&(Number(l.q.hsp)>=5||Number(l.hauteur)>=8);
  const sig=`${u.nom}\nChargé d'affaires CEE, PACLIM\n${u.tel||"04 84 89 43 00"} · ${u.email||"bureau.etude@paclim.fr"}\npaclim.fr`;
  const obj=`${l.entreprise||"Votre site"}${vil?" à "+vil:""} : économies d'énergie et financement CEE`;
@@ -2438,7 +2451,7 @@ async function rUnderstand(txt){let n=" "+znorm(txt).replace(/[.;:!?()"«»]/g,"
  const PRE=/ (?:a|sur|en|dans (?:le|la|les|l)|autour (?:de|d)|pres (?:de|d)|vers|au|aux|secteur (?:de|d)|du cote (?:de|d)) /g,END=/ (?:pour|avec|de plus|qui|ayant|dont|et qui|plus de|au moins) /;
  const cand=[];let p;while((p=PRE.exec(n))){const rest=n.slice(p.index+p[0].length),e=rest.search(END),z=(e<0?rest:rest.slice(0,e)).trim();if(z)cand.push([p.index,p[0].length-1,z]);PRE.lastIndex=p.index+1}
  for(const[at,len,z]of cand.reverse().slice(0,4)){const parts=z.split(/ et |,/).map(x=>x.trim()).filter(Boolean);if(!parts.length||parts.length>6||parts.some(x=>x.split(" ").length>5))continue;
-  const r=await rResolve(parts.join(","));if(!r.bad.length&&(r.dep.length||r.cp.length)){out.zone=parts.map(x=>/^[\d ]+$/.test(x)?x:tcase(x)).join(", ");n=n.slice(0,at)+" "+n.slice(at+len+z.length+1)+" ";break}}
+  const r=await rResolve(parts.join(","));if(!r.bad.length&&r.amb.length){out.zone=parts.map(x=>tcase(x)).join(", ");out.amb=r.amb;n=n.slice(0,at)+" "+n.slice(at+len+z.length+1)+" ";break}if(!r.bad.length&&(r.dep.length||r.cp.length)){out.zone=parts.map(x=>/^[\d ]+$/.test(x)?x:tcase(x)).join(", ");n=n.slice(0,at)+" "+n.slice(at+len+z.length+1)+" ";break}}
  if(!out.zone){const cp=n.match(/\b\d{5}\b/g);if(cp){out.zone=cp.join(", ");n=n.replace(/\b\d{5}\b/g," ")}}
  const IND=/\b(industriel\w*|fabricants?|fabrication|fabriques?|producteurs?)\b/g,ind=IND.test(n);n=n.replace(IND," ");
  const add=(codes,secs)=>{(codes||[]).forEach(c=>{if(NAFALL[c]&&!out.naf.includes(c))out.naf.push(c)});(secs||[]).forEach(s=>{if(!out.sections.includes(s))out.sections.push(s)})};
@@ -2459,7 +2472,7 @@ async function rParse(){const el=document.getElementById("rQ"),q=el?el.value:RS.
  const n=u.naf.length+u.sections.length,nd=RNEED.find(x=>x.k===u.need);
  RS.sect="libre";RS.naf=u.naf;RS.sections=u.sections;RS.need=u.need;
  RS.msg=(n?`${n} activité${n>1?"s":""} proposée${n>1?"s":""}${nd?` pour « ${nd.t} »`:""}${u.zone?`, zone : ${u.zone}`:" ; zone à indiquer"}.`:"Aucune activité reconnue dans cette phrase : ajoutez-les ci-dessous par mot-clé ou par code NAF."+(u.zone?` Zone : ${u.zone}.`:""))
-  +(u.unknown.length?` Mots non reconnus : ${u.unknown.join(", ")}.`:"")+(u.wide.length?` Trop large, à préciser : ${u.wide.join(", ")}.`:"")+(n?" Retirez ou ajoutez des activités, puis lancez.":"");
+  +(u.amb&&u.amb.length?` Zone ambiguë : « ${u.amb[0].part} » correspond à ${u.amb[0].opts.join(", ")}. Précisez le département dans la zone, par exemple « ${u.amb[0].opts[0]} ».`:"")+(u.unknown.length?` Mots non reconnus : ${u.unknown.join(", ")}.`:"")+(u.wide.length?` Trop large, à préciser : ${u.wide.join(", ")}.`:"")+(n?" Retirez ou ajoutez des activités, puis lancez.":"");
  render()}
 function rAddAct(v){v=String(v||"").trim();if(!v)return;RS.naf=RS.naf||[];const m=v.match(/^(\d\d)\.?(\d\d)\s?([A-Za-z])/),c=m?`${m[1]}.${m[2]}${m[3].toUpperCase()}`:"";let add=[];
  if(c&&NAFALL[c])add=[c];else{const f=nafFind(znorm(v).split(/[^a-z0-9]+/).filter(x=>x.length>2&&!RSTOP.has(x)));add=f.codes.slice(0,12)}
@@ -2472,16 +2485,18 @@ function rNoise(l){const m=(l.bd&&l.bd.m)||"aucun",a=znorm(l.adresse);if(/^47\.1
  if(l.ei&&m!=="adresse"&&m!=="emprise")return"Indépendant sans local identifié";
  if((m==="proche"||m==="aucun")&&RNZ_ADR.test(a)&&!RNZ_ZA.test(a))return"Adresse d'immeuble";return""}
 // Zone libre : numéros de département, codes postaux, noms de départements ou de villes, séparés par des virgules.
-async function rResolve(txt){const dep=[],cp=[],lab=[],bad=[];
+async function rResolve(txt){const dep=[],cp=[],lab=[],bad=[],amb=[];
  const parts=String(txt||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
  for(const part of parts){
   if(/^[\d\sAB]+$/i.test(part)){part.split(/\s+/).filter(Boolean).forEach(x=>{if(/^\d{5}$/.test(x)){cp.push(x);lab.push(x)}else if(/^(\d{2,3}|2[AB])$/i.test(x)){const d=x.toUpperCase().padStart(2,"0");dep.push(d);lab.push((DEPS[d]||"Département")+" ("+d+")")}else bad.push(x)});continue}
-  const n=znorm(part).replace(/^(departement|dept|dep)( de| du| des)? /,"");
+  const pd=part.match(/^(.*?)\s*\(?\b(\d{2,3}|2[AB])\)?\s*$/i),nom=pd&&!/^\d/.test(pd[1])?pd[1].trim():part,dd=pd&&!/^\d/.test(pd[1])?pd[2].toUpperCase().padStart(2,"0"):"";
+  const n=znorm(nom).replace(/^(departement|dept|dep)( de| du| des)? /,"");
   if(DEPN[n]){dep.push(DEPN[n]);if(n==="corse")dep.push("2B");lab.push(DEPS[DEPN[n]]+" ("+DEPN[n]+")");continue}
-  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);const r=await fetch("https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(part)+"&fields=nom,codesPostaux,codeDepartement&boost=population&limit=8",{signal:c.signal});clearTimeout(t);
-   const j=r.ok?await r.json():[];const m=j.find(x=>znorm(x.nom)===n)||null;
+  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);const r=await fetch("https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(nom)+"&fields=nom,codesPostaux,codeDepartement&boost=population&limit=8",{signal:c.signal});clearTimeout(t);
+   const j=r.ok?await r.json():[];const ex=j.filter(x=>znorm(x.nom)===n&&(!dd||x.codeDepartement===dd));
+   if(ex.length>1){amb.push({part:nom,opts:ex.map(x=>x.nom+" ("+x.codeDepartement+")")});continue}const m=ex[0]||null;
    if(m&&m.codesPostaux&&m.codesPostaux.length){m.codesPostaux.forEach(x=>cp.push(x));lab.push(m.nom+" ("+m.codeDepartement+")")}else bad.push(part)}catch(e){bad.push(part)}}
- return{dep:[...new Set(dep)],cp:[...new Set(cp)],lab,bad}}
+ return{dep:[...new Set(dep)],cp:[...new Set(cp)],lab,bad,amb}}
 function rZone(){return RS.z||{dep:[],cp:[]}}
 function rParams(page,pass){const z=rZone(RS.zone),e=REFF.find(x=>x[0]===RS.eff),p={etat_administratif:"A",per_page:25,page,limite_matching_etablissements:10,...(pass||rPasses()[0])};
  if(z.cp.length)p.code_postal=z.cp.join(",");else p.departement=z.dep.join(",");
@@ -2497,6 +2512,7 @@ function rLead(r,e,s){const d=(r.dirigeants||[]).find(x=>x.type_dirigeant==="per
   dirigeant:dn?`${dn.toUpperCase()}${d.qualite?" ("+d.qualite+")":""}`:"",proprietaire:"",surface:0,hauteur:0,fiab_h:"",secteur:s.sect||nafSect(e.activite_principale||r.activite_principale),froid:!!s.froid||(!!s.libre&&FROIDNAF.includes(e.activite_principale||r.activite_principale)),ei:String(r.nature_juridique)==="1000",chauffage:"",dpe:"",conso:0,score:Math.min(90,s.sc+big),scoreProv:true,scS:s.sc,
   lat:e.latitude?+e.latitude:null,lng:e.longitude?+e.longitude:null,oppo:!!r.opposition_diffusion_commerciale,statut:"new",q:{},journal:[],src:{k:"recherche",t:s.t,zone:RS.zone,d:now()}}}
 async function rPreview(){RS.err="";RS.step="busy";render();const z=await rResolve(RS.zone);RS.z=z;
+ if(z.amb.length){RS.step="form";RS.err=z.amb.map(a=>`« ${a.part} » correspond à plusieurs communes : ${a.opts.join(", ")}. Précisez le département, par exemple « ${a.opts[0]} ».`).join(" ");return render()}
  if(z.bad.length||(!z.dep.length&&!z.cp.length)){RS.step="form";RS.err=(z.bad.length?"Zone non reconnue : "+z.bad.join(", ")+". ":"")+"Indiquez un département (Isère ou 38), une ville (Grenoble) ou des codes postaux, séparés par des virgules.";return render()}
  if(z.dep.length&&z.cp.length){RS.step="form";RS.err="Choisissez soit des départements, soit des villes ou codes postaux, pas les deux dans la même recherche.";return render()}
  const ps=rPasses();if(!ps.length){RS.step="form";RS.err="Ajoutez au moins une activité : décrivez la cible en une phrase, ou tapez un mot-clé dans « Ajouter une activité ».";return render()}
@@ -2523,6 +2539,12 @@ function vVerif(){const c=RS.cand,sel=c.filter(l=>l._ok),q=sel.reduce((t,l)=>t+(
  <div style="overflow-x:auto;max-height:460px;overflow-y:auto;border:1px solid var(--line);border-radius:8px"><table style="width:100%;border-collapse:collapse;font-size:14px" class="rv"><thead><tr><th></th><th style="text-align:left">Entreprise</th><th>Surface</th><th>Hauteur</th><th>DPE</th><th>Score</th><th>Bâtiment</th></tr></thead><tbody>${rows}</tbody></table></div>
  <p style="margin:12px 0 4px"><b>${sel.length}</b> sélectionné${sel.length>1?"s":""}. Coordonnées ensuite : environ <b>${nf(Math.round(q))}</b> requêtes de recherche web (les prospects sous 40 n'en consomment pas).</p>
  <div style="display:flex;gap:8px"><button class="btn p" data-r="add" ${sel.length?"":"disabled"}>Ajouter ${sel.length} prospect${sel.length>1?"s":""}</button><button class="btn" data-r="new">Annuler</button></div>`}
+// Récapitulatif des filtres actifs avant de lancer, y compris les valeurs par défaut.
+function rRecap(s){const e=REFF.find(x=>x[0]===RS.eff),acts=s.libre?((RS.naf||[]).length+(RS.sections||[]).length)+" activité(s)":s.t,dflt=t=>` <span class="tag">par défaut</span>`;
+ const z=RS.z&&RS.z.lab&&RS.z.lab.length&&RS.step!=="form"?RS.z.lab.join(", "):RS.zone||"à indiquer";
+ return `<div class="sm" style="margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--soft)"><b>Filtres appliqués</b><ul style="margin:4px 0 0;padding-left:18px">
+ <li>Activités : ${esc(acts)}</li><li>Zone : ${esc(z)}</li><li>Taille : ${esc(e?e[1]:"Toutes tailles")}${RS.eff==="10"?dflt():""}${RS.eff?" (établissements à effectif non déclaré écartés)":""}</li>
+ <li>Prospects au plus : ${nf(RS.max)}${RS.max===RMAX?dflt():""}</li><li>Sociétés opposées à la prospection : ${RS.opp?"exclues":"incluses"}${RS.opp?dflt():""}</li><li>Établissements fermés : exclus</li></ul></div>`}
 function vRech(){const s=rSect(),lib=RS.sect==="libre",nA=(RS.naf||[]).length+(RS.sections||[]).length,busy=RS.step==="busy"||RS.step==="run"||RS.step==="bdnb"||RS.step==="verify",dis=RS.step!=="form"&&RS.step!=="done"?"disabled":"";
  const xb='style="border:0;background:none;padding:0 0 0 5px;font-weight:700;color:inherit;cursor:pointer"';
  const chips=lib?`<div class="f"><label for="rA">Activités recherchées (${nA})</label><div style="display:flex;flex-wrap:wrap;gap:2px 0;margin-bottom:6px">${(RS.sections||[]).map(x=>`<span class="tag b" style="white-space:normal">Section ${esc(x)} · ${esc(NAFSEC[x]||"toutes ses activités")}${dis?"":`<button ${xb} data-rx="S:${esc(x)}" aria-label="Retirer la section ${esc(x)}">×</button>`}</span>`).join("")}${(RS.naf||[]).map(c=>`<span class="tag" style="white-space:normal">${c} · ${esc(NAFALL[c]||"")}${dis?"":`<button ${xb} data-rx="${c}" aria-label="Retirer ${c}">×</button>`}</span>`).join("")}${nA?"":`<span class="sm mut">Aucune pour l'instant.</span>`}</div>
@@ -2537,9 +2559,9 @@ function vRech(){const s=rSect(),lib=RS.sect==="libre",nA=(RS.naf||[]).length+(R
  const warnLogi=!lib&&RS.sect==="logi"?`<p class="sm" style="margin:-4px 0 12px;padding:8px 10px;border-left:3px solid var(--amber);background:var(--amberbg)">Depuis le 1er août 2025, la déstratification d'air (BAT-TH-142, IND-BA-110) exclut les entrepôts, réserves et locaux de stockage. Sur ce secteur, la seule piste paramétrée est la régulation HP flottante des groupes froids, à confirmer site par site.</p>`:"";
  const err=RS.err?`<p role="alert" style="color:#b3261e;margin:4px 0 10px;font-size:13px">${esc(RS.err)}</p>`:"";
  let act="";
- if(RS.step==="form")act=`<button class="btn p" data-r="prev">Voir combien de sociétés</button>`;
+ if(RS.step==="form")act=`${rRecap(s)}<button class="btn p" data-r="prev">Voir combien de sociétés</button>`;
  else if(RS.step==="busy")act=`<p>${esc(RS.busyT||"Interrogation du registre officiel…")}</p>`;
- else if(RS.step==="preview"){const n=Math.min(RS.n,RS.max);act=`<p><b>${nf(RS.n)}</b> société${RS.n>1?"s":""} au registre pour « ${esc(s.t)} » : ${esc((RS.z&&RS.z.lab||[]).join(", "))}.${RS.n?` Ajout de <b>${nf(n)}</b> au plus, sans les prospects déjà présents ou retirés.`:""}</p>
+ else if(RS.step==="preview"){const n=Math.min(RS.n,RS.max);act=`${rRecap(s)}<p><b>${nf(RS.n)}</b> société${RS.n>1?"s":""} au registre pour « ${esc(s.t)} » : ${esc((RS.z&&RS.z.lab||[]).join(", "))}.${RS.n?` Au plus <b>${nf(n)}</b> prospects seront ajoutés. Le nombre final sera plus bas : la collecte écarte ensuite les établissements hors zone ou fermés${RS.eff?", ceux dont l'effectif n'est pas déclaré":""}${RS.opp?", les sociétés opposées à la prospection":""} et les prospects déjà présents ou retirés.`:""}</p>
   ${RS.n?`<p style="font-size:13px;opacity:.75">Registre et bâtiments (BDNB) sont gratuits. Vous vérifiez ensuite la liste avant tout ajout ; la recherche web des coordonnées ne porte que sur les prospects validés.</p>`:""}
   <div style="display:flex;gap:8px">${RS.n?`<button class="btn p" data-r="run">Lancer la recherche</button>`:""}<button class="btn" data-r="back">Modifier</button></div>`}
  else if(RS.step==="run")act=`<p>Lecture du registre… <b>${RS.done}</b> établissements trouvés${RS.skip?`, ${RS.skip} déjà connus`:""}.</p>`;
