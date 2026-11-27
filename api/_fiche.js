@@ -39,8 +39,8 @@ async function contacts(l,e,guess){const nom=(e.ent&&e.ent.nom)||l.entreprise;if
  if(!guess)await slot();
  const r=await ENR.core({nom,siren:e.ent&&e.ent.siren,siret:l.siret,cp:l.cp,ville:l.ville,adresse:l.adresse||"",site:(l.q&&l.q.site)||"",nosearch:!!guess});
  if(!r||r.err||r.retry)return false;
- const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],email:r.email||null,emails:r.emails||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,r5:true,srv:true,t:now()};
- if(pv&&guess&&!pv.g){["tel","email","tels","emails","fiab","src"].forEach(k=>{const v=e.ct[k];if(!v||(Array.isArray(v)&&!v.length)||v==="aucune")e.ct[k]=pv[k]});e.ct.cle=pv.cle;e.ct.g=false}
+ const pv=e.ct;e.ct={tel:r.tel||null,tels:r.tels||[],telsD:r.telsD||[],email:r.email||null,emails:r.emails||[],emailsD:r.emailsD||[],site:r.site||null,siteFiab:r.siteFiab||null,social:r.social||{},fiab:r.fiab||"aucune",src:r.src||[],cle:r.cle!==false,g:!!guess,r3:true,r4:true,r5:true,srv:true,t:now()};
+ if(pv&&guess&&!pv.g){["tel","email","tels","emails","telsD","emailsD","fiab","src"].forEach(k=>{const v=e.ct[k];if(!v||(Array.isArray(v)&&!v.length)||v==="aucune")e.ct[k]=pv[k]});e.ct.cle=pv.cle;e.ct.g=false}
  l.q=l.q||{};if(!l.q.tel&&e.ct.tel)l.q.tel=e.ct.tel;if(!l.q.email&&e.ct.email)l.q.email=e.ct.email;if(!l.q.site&&e.ct.site)l.q.site=e.ct.site;return e.ct.cle!==false}
 // Fiche complète d'un bâtiment. Modifie l et renvoie true si quelque chose a été fait.
 async function run(l,force){
